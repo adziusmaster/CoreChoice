@@ -1498,8 +1498,15 @@ public class SchemaInitializerTests
         (await db.DeviceSeeds.CountAsync()).Should().Be(0);
         (await db.ProfileGrants.CountAsync()).Should().Be(0);
         (await db.UsageLogs.CountAsync()).Should().Be(0);
-        (await db.Personas.CountAsync()).Should().Be(0);
-        (await db.PromptTemplates.CountAsync()).Should().Be(0);
+
+        // Personas and PromptTemplates are asserted as QUERYABLE, not as empty. Task 9 makes this
+        // same initializer seed six personas at boot, which is a requirement — so asserting these
+        // tables are empty would assert the opposite of what the system must do, and would break
+        // the moment Task 9 lands.
+        var queryPersonas = async () => await db.Personas.CountAsync();
+        var queryTemplates = async () => await db.PromptTemplates.CountAsync();
+        await queryPersonas.Should().NotThrowAsync();
+        await queryTemplates.Should().NotThrowAsync();
     }
 
     [Fact]
@@ -4831,8 +4838,18 @@ public class RateLimitTests
     [Fact]
     public async Task Decisions_WhenRateLimited_ShouldNotSpendACoin()
     {
-        // Arrange
+        // Arrange — the substitute MUST be configured. A bare Substitute.For<IGeminiClient>()
+        // returns a null Task from AnalyseAsync, which throws inside the handler, hits the
+        // refund-and-rethrow path, and leaves the balance at 5 instead of 0 — so the test would
+        // fail for a reason that has nothing to do with rate limiting.
         var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default).ReturnsForAnyArgs(
+            new CoreChoice.Application.DecisionResult(
+                new CoreChoice.Domain.DecisionAnalysis("Go", 60, ["r"],
+                    new CoreChoice.Domain.OptionAssessment("A", ["s"], ["k"]),
+                    new CoreChoice.Domain.OptionAssessment("B", ["s"], ["k"]),
+                    "", false),
+                CoreChoice.Domain.TokenUsage.Empty));
         var factory = new CoreChoiceAppFactory(gemini);
         var client = factory.CreateClient();
         var device = Guid.NewGuid();
