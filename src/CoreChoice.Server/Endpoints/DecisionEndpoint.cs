@@ -12,7 +12,6 @@ internal static class DecisionEndpoint
 {
     public static async Task<IResult> Generate(
         GenerateDecisionRequest request,
-        HttpContext http,
         ICoinStore coins,
         IPromptStore prompts,
         IGeminiClient gemini,
@@ -51,6 +50,10 @@ internal static class DecisionEndpoint
         if (prompt is null)
             return Results.BadRequest(new { error = $"Unknown persona '{persona.Value}'." });
 
+        // Computed above the spend, not after it: nothing here may sit between the spend and the
+        // try block that refunds on failure, or it inherits a window nothing refunds.
+        var deviceHash = hasher.HashDevice(request.DeviceId);
+
         // ---- 2. Spend ------------------------------------------------------------------------
         if (!await coins.TrySpendAsync(request.DeviceId, price, ct))
         {
@@ -61,8 +64,6 @@ internal static class DecisionEndpoint
         }
 
         // ---- 3. Everything from here refunds on failure --------------------------------------
-        var deviceHash = hasher.HashDevice(request.DeviceId);
-
         try
         {
             var assembled = PromptAssembler.Assemble(prompt.Template, profile, weight, dilemma);
@@ -87,9 +88,14 @@ internal static class DecisionEndpoint
         }
         catch (MalformedAdvisorResponseException ex)
         {
-            await coins.RefundAsync(request.DeviceId, price, ct);
+            // A compensating action must never be cancellable by the failure that triggered it: if
+            // the caller has already disconnected, `ct` is cancelled here, and awaiting the refund
+            // with it would return without touching the database — the coin is gone and nothing
+            // throws to say so. CancellationToken.None guarantees the refund and its failure-path
+            // log land regardless of what the request's own token is doing.
+            await coins.RefundAsync(request.DeviceId, price, CancellationToken.None);
             await LogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
-                profile.IsPresent, TokenUsage.Empty, success: false, ct);
+                profile.IsPresent, TokenUsage.Empty, success: false, CancellationToken.None);
 
             // Logged with the prompt version on purpose: an unparseable response is the shape a
             // successful injection takes, and the version is the first thing to check.
@@ -101,17 +107,20 @@ internal static class DecisionEndpoint
         }
         catch (Exception ex) when (ex is DecisionUnavailableException or OperationCanceledException or HttpRequestException)
         {
-            await coins.RefundAsync(request.DeviceId, price, ct);
+            // Same principle as above: this branch is reached BECAUSE the request was cancelled, so
+            // `ct` is exactly the token that must not be used to guard the compensating action.
+            await coins.RefundAsync(request.DeviceId, price, CancellationToken.None);
             await LogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
-                profile.IsPresent, TokenUsage.Empty, success: false, ct);
+                profile.IsPresent, TokenUsage.Empty, success: false, CancellationToken.None);
 
             return Results.Json(new { error = "The advisor is temporarily unavailable. Please try again." },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
         }
         catch
         {
-            // Nothing is allowed to keep the coin. An unexpected failure is still our failure.
-            await coins.RefundAsync(request.DeviceId, price, ct);
+            // Nothing is allowed to keep the coin. An unexpected failure is still our failure, and
+            // a cancelled `ct` must not be the reason the refund silently never happens.
+            await coins.RefundAsync(request.DeviceId, price, CancellationToken.None);
             throw;
         }
     }

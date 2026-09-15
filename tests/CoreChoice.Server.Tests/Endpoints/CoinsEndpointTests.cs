@@ -91,6 +91,7 @@ public class CoinsEndpointTests
         var body = await response.Content.ReadFromJsonAsync<GrantDto>();
         body!.Granted.Should().BeFalse();
         body.Balance.Should().Be(10);
+        body.Reason.Should().Be("already-granted", "the app branches on this exact string");
     }
 
     [Fact]

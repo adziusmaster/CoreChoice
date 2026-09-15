@@ -185,7 +185,7 @@ public class DecisionEndpointTests
     }
 
     [Fact]
-    public async Task Generate_OnSuccess_ShouldRecordUsageWithoutTheDilemmaOrProfile()
+    public async Task Generate_OnSuccess_ShouldRecordTheTokenCountsAndPromptVersion()
     {
         // Arrange
         var gemini = Substitute.For<IGeminiClient>();
@@ -199,12 +199,7 @@ public class DecisionEndpointTests
         await client.PostAsJsonAsync("/api/decisions", Body(device, profile: Profile()));
 
         // Assert
-        using var scope = factory.Services.CreateScope();
-        var dbFactory = scope.ServiceProvider
-            .GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Server.Data.ServerDbContext>>();
-        await using var db = await dbFactory.CreateDbContextAsync();
-        var log = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions
-            .SingleAsync(db.UsageLogs);
+        var log = await SingleUsageLogAsync(factory);
 
         log.PromptTokens.Should().Be(100);
         log.OutputTokens.Should().Be(50);
@@ -213,6 +208,238 @@ public class DecisionEndpointTests
         log.PromptVersion.Should().Be(1);
         log.Success.Should().BeTrue();
         log.DeviceHash.Should().NotBe(device.ToString(), "the raw device id must not be stored");
+    }
+
+    [Fact]
+    public async Task Generate_WhenTheModelReturnsGarbage_ShouldRecordAFailedUsageRow()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default)
+            .ThrowsAsyncForAnyArgs(new MalformedAdvisorResponseException("nope"));
+        var factory = new CoreChoiceAppFactory(gemini);
+        var client = factory.CreateClient();
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        await client.PostAsJsonAsync("/api/decisions", Body(device));
+
+        // Assert — the failed generation is still cost-accounted, at zero tokens.
+        var log = await SingleUsageLogAsync(factory);
+        log.Success.Should().BeFalse();
+        log.TotalTokens.Should().Be(0);
+        log.PersonaId.Should().Be("pure-logic");
+        log.PromptVersion.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Generate_WhenGeminiIsUnavailable_ShouldRecordAFailedUsageRow()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default)
+            .ThrowsAsyncForAnyArgs(new DecisionUnavailableException("down"));
+        var factory = new CoreChoiceAppFactory(gemini);
+        var client = factory.CreateClient();
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        await client.PostAsJsonAsync("/api/decisions", Body(device));
+
+        // Assert
+        var log = await SingleUsageLogAsync(factory);
+        log.Success.Should().BeFalse();
+        log.TotalTokens.Should().Be(0);
+        log.PersonaId.Should().Be("pure-logic");
+        log.PromptVersion.Should().Be(1);
+    }
+
+    [Fact]
+    public async Task Generate_WhenTheCallerDisconnectsAfterGeminiAnswers_ShouldStillRefundTheCoin()
+    {
+        // Arrange — the worst variant from the review: the advisor has already answered (Gemini is
+        // paid for) at the moment the caller's connection dies. The fake advisor cancels the
+        // client's own token — which the in-memory TestServer propagates onto the server's
+        // RequestAborted/`ct` — right before it hands back a result, simulating the disconnect
+        // landing between "Gemini answered" and "we finished logging it".
+        using var cts = new CancellationTokenSource();
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default).ReturnsForAnyArgs(_ =>
+        {
+            cts.Cancel();
+            return Task.FromResult(Ok());
+        });
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        try
+        {
+            await client.PostAsJsonAsync("/api/decisions", Body(device), cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected: the caller's own token was cancelled mid-flight.
+        }
+        catch (HttpRequestException)
+        {
+            // Some transports surface the cancellation wrapped in this instead.
+        }
+
+        // Assert
+        var balance = await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}");
+        balance!.Balance.Should().Be(5,
+            "a caller disconnect must not burn the coin the refund exists to return");
+    }
+
+    [Fact]
+    public async Task Generate_WhenTheAdvisorThrowsSomethingUnexpected_ShouldRefundAndNotReturnSuccess()
+    {
+        // Arrange — neither DecisionUnavailableException nor MalformedAdvisorResponseException: an
+        // exception type the catch-all, not the two typed handlers, is responsible for.
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default)
+            .ThrowsAsyncForAnyArgs(new InvalidOperationException("boom"));
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        HttpResponseMessage? response = null;
+        try
+        {
+            response = await client.PostAsJsonAsync("/api/decisions", Body(device));
+        }
+        catch (HttpRequestException)
+        {
+            // An unhandled exception may surface as a broken response rather than a status code,
+            // depending on the host; either way it must not be a 2xx.
+        }
+
+        // Assert
+        if (response is not null)
+            response.IsSuccessStatusCode.Should().BeFalse(
+                "an unexpected failure must never look like success");
+
+        (await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}"))!.Balance.Should().Be(5,
+            "the catch-all must refund even when it does not know what went wrong");
+    }
+
+    [Fact]
+    public async Task Generate_WithAProfile_ShouldPassTheProfileAndDilemmaToTheAdvisor()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default).ReturnsForAnyArgs(Ok());
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        await client.PostAsJsonAsync("/api/decisions", Body(device, profile: Profile()));
+
+        // Assert — the profile actually shaped the system prompt, and the dilemma actually reached
+        // the fenced user block, rather than the endpoint quietly ignoring both.
+        await gemini.Received(1).AnalyseAsync(
+            Arg.Is<string>(s => s.Contains("openness: 80", StringComparison.Ordinal)),
+            Arg.Is<string>(u => u.Contains("Take the job", StringComparison.Ordinal)
+                && u.Contains("Stay put", StringComparison.Ordinal)),
+            true,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Generate_WithoutAProfile_ShouldTellTheAdvisorNoProfileExistsButStillPassTheDilemma()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default).ReturnsForAnyArgs(Ok());
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        await client.PostAsJsonAsync("/api/decisions", Body(device));
+
+        // Assert
+        await gemini.Received(1).AnalyseAsync(
+            Arg.Is<string>(s => s.Contains("has not taken the personality test", StringComparison.Ordinal)),
+            Arg.Is<string>(u => u.Contains("Take the job", StringComparison.Ordinal)
+                && u.Contains("Stay put", StringComparison.Ordinal)),
+            false,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Theory]
+    [InlineData(150)]
+    [InlineData(-1)]
+    public async Task Generate_WithAnOutOfRangeTraitScore_ShouldReturnBadRequestWithoutSpending(int trait)
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+        var badProfile = new { openness = trait, conscientiousness = 50, extraversion = 30, agreeableness = 60, neuroticism = 40 };
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/decisions", Body(device, profile: badProfile));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}"))!.Balance.Should().Be(5);
+        await gemini.DidNotReceiveWithAnyArgs().AnalyseAsync(default!, default!, default, default);
+    }
+
+    [Fact]
+    public async Task Generate_WithAnOversizedOption_ShouldReturnBadRequestWithoutSpending()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+        var oversized = new string('a', Dilemma.MaxOptionLength + 1);
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/decisions",
+            new { deviceId = device, optionA = oversized, optionB = "Stay put", context = (string?)null, persona = "pure-logic", weight = 3, profile = (object?)null });
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}"))!.Balance.Should().Be(5);
+        await gemini.DidNotReceiveWithAnyArgs().AnalyseAsync(default!, default!, default, default);
+    }
+
+    [Fact]
+    public async Task Generate_WithAnUnparseableBody_ShouldReturnBadRequestWithoutSpending()
+    {
+        // Arrange
+        var gemini = Substitute.For<IGeminiClient>();
+        var (client, _) = await BuildAsync(gemini);
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        var response = await client.PostAsync("/api/decisions",
+            new StringContent("{ this is not json", System.Text.Encoding.UTF8, "application/json"));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+        (await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}"))!.Balance.Should().Be(5);
+        await gemini.DidNotReceiveWithAnyArgs().AnalyseAsync(default!, default!, default, default);
+    }
+
+    private static async Task<Server.Data.UsageLog> SingleUsageLogAsync(CoreChoiceAppFactory factory)
+    {
+        using var scope = factory.Services.CreateScope();
+        var dbFactory = scope.ServiceProvider
+            .GetRequiredService<Microsoft.EntityFrameworkCore.IDbContextFactory<Server.Data.ServerDbContext>>();
+        await using var db = await dbFactory.CreateDbContextAsync();
+        return await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.SingleAsync(db.UsageLogs);
     }
 
     private sealed record DecisionResponseDto(

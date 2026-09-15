@@ -36,9 +36,12 @@ internal static class DevEndpoint
         return Results.Ok(new BalanceResponse(request.DeviceId, balance));
     }
 
-    // Fixed-time comparison: a secret checked with == leaks its length and prefix to a patient caller.
+    // Fixed-time comparison: a secret checked with == leaks its length and prefix to a patient
+    // caller. Hashing both sides to a fixed-width SHA-256 digest first — rather than padding and
+    // truncating the raw strings to 64 characters — means every character of both inputs is
+    // significant and trailing whitespace on either side no longer compares equal.
     private static bool CryptographicEquals(string a, string b) =>
         System.Security.Cryptography.CryptographicOperations.FixedTimeEquals(
-            System.Text.Encoding.UTF8.GetBytes(a.PadRight(64)[..64]),
-            System.Text.Encoding.UTF8.GetBytes(b.PadRight(64)[..64]));
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(a)),
+            System.Security.Cryptography.SHA256.HashData(System.Text.Encoding.UTF8.GetBytes(b)));
 }

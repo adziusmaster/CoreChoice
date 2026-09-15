@@ -7,6 +7,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace CoreChoice.Server.Tests;
 
@@ -19,9 +20,14 @@ internal sealed class CoreChoiceAppFactory(IGeminiClient gemini) : WebApplicatio
 {
     private readonly SqliteConnection _connection = new("Filename=:memory:");
 
+    /// <summary>Every message logged by the host during this factory's lifetime.</summary>
+    public InMemoryLoggerProvider Logs { get; } = new();
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.UseEnvironment(Environments.Development);
+
+        builder.ConfigureLogging(logging => logging.AddProvider(Logs));
 
         builder.ConfigureServices(services =>
         {
