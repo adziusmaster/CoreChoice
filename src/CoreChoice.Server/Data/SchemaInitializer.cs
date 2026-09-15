@@ -22,6 +22,7 @@ internal static class SchemaInitializer
         await db.Database.EnsureCreatedAsync(ct);
 
         // --- Post-first-deploy changes go below this line, each idempotent. ---
-        // (none yet)
+        // Content the application cannot run without. Idempotent: does nothing when rows exist.
+        await ContentSeed.SeedAsync(factory, ct);
     }
 }
