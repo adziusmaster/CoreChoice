@@ -33,16 +33,35 @@ public class SchemaInitializerTests
     }
 
     [Fact]
-    public async Task InitializeAsync_WhenRunTwice_ShouldNotThrow()
+    public async Task InitializeAsync_WhenRunTwice_ShouldPreserveExistingData()
     {
-        // Arrange
+        // Arrange — boot runs this every start against a live database holding real coin
+        // balances. "Does not throw" is far too weak a guarantee: an initializer that dropped and
+        // recreated its tables would satisfy it while wiping every balance on the volume. So the
+        // test writes a row, re-runs initialization, and demands the row survive.
         var factory = InMemoryDb.Create();
         await SchemaInitializer.InitializeAsync(factory);
 
-        // Act
-        var act = async () => await SchemaInitializer.InitializeAsync(factory);
+        var deviceId = Guid.NewGuid();
+        await using (var seed = await factory.CreateDbContextAsync())
+        {
+            seed.Coins.Add(new DeviceCoins
+            {
+                DeviceId = deviceId,
+                Balance = 7,
+                CreatedAt = DateTimeOffset.UtcNow,
+                UpdatedAt = DateTimeOffset.UtcNow,
+            });
+            await seed.SaveChangesAsync();
+        }
 
-        // Assert — boot runs this every start; it must be idempotent.
-        await act.Should().NotThrowAsync();
+        // Act
+        await SchemaInitializer.InitializeAsync(factory);
+
+        // Assert
+        await using var db = await factory.CreateDbContextAsync();
+        var row = await db.Coins.SingleOrDefaultAsync(x => x.DeviceId == deviceId);
+        row.Should().NotBeNull();
+        row!.Balance.Should().Be(7, "re-initialising must never disturb persisted balances");
     }
 }
