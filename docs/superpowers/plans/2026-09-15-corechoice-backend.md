@@ -557,26 +557,62 @@ public class IpipScoringTests
         perTrait.Values.Should().AllBeEquivalentTo(10);
     }
 
-    [Fact]
-    public void Score_WhenEveryAnswerIsMaximum_ShouldReflectReverseKeying()
+    [Theory]
+    [InlineData(Trait.Openness, new[] { 10, 20, 30 })]
+    [InlineData(Trait.Conscientiousness, new[] { 8, 18, 28, 38 })]
+    [InlineData(Trait.Extraversion, new[] { 6, 16, 26, 36, 46 })]
+    [InlineData(Trait.Agreeableness, new[] { 2, 12, 22, 32 })]
+    [InlineData(Trait.Neuroticism, new[] { 9, 19 })]
+    public void Items_ReverseKeyedNumbers_ShouldMatchTheInstrument(Trait trait, int[] expected)
     {
-        // Arrange — answering 5 to everything means "very accurate" to both
-        // "Am the life of the party" and "Keep in the background", so every trait
-        // lands mid-scale. A naive implementation that ignores reverse keys returns 100.
+        // Arrange — the keying is DATA, and data can be silently wrong in a way no scoring test
+        // catches. This pins every flag by item number, so flipping a single one fails the build.
+        // The counts are deliberately uneven (3/4/5/4/2): the instrument's items are simply not
+        // written with balanced polarity, and "tidying" them to 5-per-trait inverts item meanings.
+        var items = IpipItemBank.Items.Where(i => i.Trait == trait);
+
+        // Act
+        var reverseKeyed = items.Where(i => i.IsReverseKeyed).Select(i => i.Number).OrderBy(n => n);
+
+        // Assert
+        reverseKeyed.Should().Equal(expected);
+    }
+
+    [Fact]
+    public void Score_WhenEveryAnswerIsMaximum_ShouldReflectEachTraitsReverseKeyCount()
+    {
+        // Arrange — answering 5 to everything means "very accurate" to both "Am the life of the
+        // party" and "Keep in the background". Each trait therefore lands at 100 - 10r, where r is
+        // its reverse-keyed count. The five expected values are DISTINCT, which is what makes this
+        // test keying-sensitive: it pins each trait's reverse count individually.
+        //
+        // Do NOT "simplify" these to five identical 50s. That is only true of a balanced
+        // instrument, and an earlier revision of this plan asserted exactly that — which made the
+        // test unsatisfiable against the real bank and led an implementer to rewrite the
+        // questionnaire to fit the test.
         var responses = AllAnswered(5);
 
         // Act
         var profile = IpipScoring.Score(responses);
 
-        // Assert
+        // Assert — a naive implementation ignoring reverse keys returns 100 for all five.
         profile.IsPresent.Should().BeTrue();
-        foreach (var trait in Enum.GetValues<Trait>())
-            profile[trait].Value.Should().Be(50, $"{trait} should be mid-scale when all answers agree");
+        profile[Trait.Openness].Value.Should().Be(70);
+        profile[Trait.Conscientiousness].Value.Should().Be(60);
+        profile[Trait.Extraversion].Value.Should().Be(50);
+        profile[Trait.Agreeableness].Value.Should().Be(60);
+        profile[Trait.Neuroticism].Value.Should().Be(80);
     }
 
     [Fact]
     public void Score_WhenForwardItemsMaxAndReverseItemsMin_ShouldReturnHundred()
     {
+        // NOTE: this test and the two below derive their inputs FROM IsReverseKeyed, so every item
+        // contributes the same value whatever its flag. They constrain the normalisation endpoints
+        // and trait independence — they do NOT constrain the keying, and would pass on a bank with
+        // all 50 flags set. Keying is pinned by Items_ReverseKeyedNumbers_ShouldMatchTheInstrument
+        // and by the all-maximum test above. Do not treat these three as keying coverage.
+
         // Arrange
         var responses = IpipItemBank.Items.ToDictionary(
             i => i.Number,
@@ -818,8 +854,11 @@ public static class IpipScoring
                     $"Item {number}: responses run from {IpipItemBank.MinResponse} to {IpipItemBank.MaxResponse}.");
         }
 
-        if (responses.Count != IpipItemBank.ItemCount)
-            throw new IncompleteProfileException(responses.Count);
+        // Completeness is checked by IDENTITY, not by count: a 50-entry submission that omits
+        // item 17 and includes a bogus 999 has the right size and the wrong content.
+        var answered = IpipItemBank.Items.Count(i => responses.ContainsKey(i.Number));
+        if (answered != IpipItemBank.ItemCount)
+            throw new IncompleteProfileException(answered);
 
         return new OceanProfile(
             ScoreTrait(Trait.Openness, responses),
