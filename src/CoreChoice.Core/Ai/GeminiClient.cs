@@ -63,9 +63,22 @@ public sealed class GeminiClient(
                 || candidates.GetArrayLength() == 0)
                 throw new MalformedAdvisorResponseException("no candidates returned");
 
-            var text = candidates[0]
-                .GetProperty("content").GetProperty("parts")[0]
-                .GetProperty("text").GetString();
+            var candidate = candidates[0];
+
+            if (!candidate.TryGetProperty("content", out var content))
+                throw new MalformedAdvisorResponseException(
+                    "candidate has no content (this is what a safety-blocked candidate looks like)");
+
+            if (!content.TryGetProperty("parts", out var parts))
+                throw new MalformedAdvisorResponseException("content has no parts");
+
+            if (parts.ValueKind != JsonValueKind.Array || parts.GetArrayLength() == 0)
+                throw new MalformedAdvisorResponseException("parts was empty");
+
+            if (!parts[0].TryGetProperty("text", out var textElement))
+                throw new MalformedAdvisorResponseException("parts[0] has no text");
+
+            var text = textElement.GetString();
 
             if (string.IsNullOrWhiteSpace(text))
                 throw new MalformedAdvisorResponseException("empty candidate text");
@@ -140,7 +153,19 @@ public sealed class GeminiClient(
             using (response)
             {
                 if (response.IsSuccessStatusCode)
-                    return await response.Content.ReadAsStringAsync(ct);
+                {
+                    try
+                    {
+                        return await response.Content.ReadAsStringAsync(ct);
+                    }
+                    catch (HttpRequestException ex)
+                    {
+                        if (attempt >= _options.MaxAttempts)
+                            throw new DecisionUnavailableException("The advisor could not be reached.", ex);
+                        await BackoffAsync(attempt, ct);
+                        continue;
+                    }
+                }
 
                 var retryable = response.StatusCode
                     is HttpStatusCode.TooManyRequests

@@ -98,6 +98,85 @@ public class GeminiClientTests
     }
 
     [Fact]
+    public async Task AnalyseAsync_WhenCandidateHasNoContent_ShouldThrowMalformed()
+    {
+        // Arrange — this is what a candidate blocked on safety grounds looks like: no
+        // `content` property at all, just a finishReason.
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"candidates":[{"finishReason":"SAFETY"}]}"""));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
+    }
+
+    [Fact]
+    public async Task AnalyseAsync_WhenContentHasNoParts_ShouldThrowMalformed()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"candidates":[{"content":{}}]}"""));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
+    }
+
+    [Fact]
+    public async Task AnalyseAsync_WhenPartsIsEmpty_ShouldThrowMalformed()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"candidates":[{"content":{"parts":[]}}]}"""));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
+    }
+
+    [Fact]
+    public async Task AnalyseAsync_WhenPartHasNoText_ShouldThrowMalformed()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"candidates":[{"content":{"parts":[{}]}}]}"""));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.Unauthorized)]
+    public async Task AnalyseAsync_WhenGeminiReturnsANonRetryableStatus_ShouldThrowAfterExactlyOneAttempt(
+        HttpStatusCode status)
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(StubHttpMessageHandler.Json("denied", status));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        await act.Should().ThrowAsync<DecisionUnavailableException>();
+        handler.CallCount.Should().Be(1);
+    }
+
+    [Fact]
     public async Task AnalyseAsync_WhenGeminiIsOverloadedThenRecovers_ShouldRetryAndSucceed()
     {
         // Arrange
