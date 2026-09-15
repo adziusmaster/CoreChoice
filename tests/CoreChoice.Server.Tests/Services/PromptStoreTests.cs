@@ -2,6 +2,7 @@ using CoreChoice.Domain;
 using CoreChoice.Server.Data;
 using CoreChoice.Server.Services;
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 
 namespace CoreChoice.Server.Tests.Services;
 
@@ -13,6 +14,14 @@ public class PromptStoreTests
         await SchemaInitializer.InitializeAsync(factory);
         await ContentSeed.SeedAsync(factory);
         return new SqlitePromptStore(factory);
+    }
+
+    private static async Task<(IPromptStore Store, IDbContextFactory<ServerDbContext> Factory)> BuildSeededWithFactoryAsync()
+    {
+        var factory = InMemoryDb.Create();
+        await SchemaInitializer.InitializeAsync(factory);
+        await ContentSeed.SeedAsync(factory);
+        return (new SqlitePromptStore(factory), factory);
     }
 
     [Fact]
@@ -27,7 +36,9 @@ public class PromptStoreTests
         // Assert
         personas.Should().HaveCount(6);
         personas.Select(p => p.SortOrder).Should().BeInAscendingOrder();
-        personas.Select(p => p.Id).Should().Contain("devils-advocate");
+        personas.Select(p => p.Id).Should().Equal(
+            "devils-advocate", "warm-support", "pure-logic",
+            "the-pragmatist", "the-long-view", "gut-check");
     }
 
     [Fact]
@@ -59,6 +70,30 @@ public class PromptStoreTests
     }
 
     [Fact]
+    public async Task GetActivePromptAsync_ForADeactivatedPersona_ShouldReturnNull()
+    {
+        // Arrange
+        var (store, factory) = await BuildSeededWithFactoryAsync();
+
+        // Deactivate pure-logic persona by writing directly through the factory. The Join clause
+        // that filters on p.IsActive is otherwise dead code — a reviewer could delete it and all
+        // tests would still pass. A persona that is switched off must stop answering rather than
+        // keep serving its old prompt.
+        await using (var db = await factory.CreateDbContextAsync())
+        {
+            var persona = await db.Personas.FirstAsync(p => p.Id == "pure-logic");
+            persona.IsActive = false;
+            await db.SaveChangesAsync();
+        }
+
+        // Act
+        var prompt = await store.GetActivePromptAsync(PersonaId.From("pure-logic"));
+
+        // Assert
+        prompt.Should().BeNull();
+    }
+
+    [Fact]
     public async Task SeedAsync_WhenRunTwice_ShouldNotDuplicateRows()
     {
         // Arrange
@@ -72,6 +107,11 @@ public class PromptStoreTests
         // Assert
         var store = new SqlitePromptStore(factory);
         (await store.GetActivePersonasAsync()).Should().HaveCount(6);
+
+        // Guard against duplicating templates: a guard that stops duplicating personas but not
+        // templates would currently pass, so both must be checked.
+        await using var db = await factory.CreateDbContextAsync();
+        (await db.PromptTemplates.CountAsync()).Should().Be(6);
     }
 
     [Fact]
