@@ -189,6 +189,11 @@ mkdir -p tests/CoreChoice.Server.Tests/Services tests/CoreChoice.Server.Tests/En
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <!-- Pinned to override the transitive SQLitePCLRaw.lib.e_sqlite3 2.1.11 that EF Core 10.0.0
+         pulls in, which carries a HIGH severity advisory (GHSA-2m69-gcr7-jv3q, surfaced as
+         NU1903). 2.1.13 resolves the native lib to a patched build. PurePrep pins this for the
+         same reason. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\CoreChoice.Core\CoreChoice.Core.csproj" />
@@ -230,6 +235,11 @@ mkdir -p tests/CoreChoice.Server.Tests/Services tests/CoreChoice.Server.Tests/En
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <!-- Pinned to override the transitive SQLitePCLRaw.lib.e_sqlite3 2.1.11 that EF Core 10.0.0
+         pulls in, which carries a HIGH severity advisory (GHSA-2m69-gcr7-jv3q, surfaced as
+         NU1903). 2.1.13 resolves the native lib to a patched build. PurePrep pins this for the
+         same reason. -->
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CoreChoice.Server\CoreChoice.Server.csproj" />
