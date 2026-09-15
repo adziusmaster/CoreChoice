@@ -33,8 +33,11 @@ public static class IpipScoring
                     $"Item {number}: responses run from {IpipItemBank.MinResponse} to {IpipItemBank.MaxResponse}.");
         }
 
-        if (responses.Count != IpipItemBank.ItemCount)
-            throw new IncompleteProfileException(responses.Count);
+        // Completeness is checked by IDENTITY, not by count: a 50-entry submission that omits
+        // item 17 and includes a bogus 999 has the right size and the wrong content.
+        var answered = IpipItemBank.Items.Count(i => responses.ContainsKey(i.Number));
+        if (answered != IpipItemBank.ItemCount)
+            throw new IncompleteProfileException(answered);
 
         return new OceanProfile(
             ScoreTrait(Trait.Openness, responses),
