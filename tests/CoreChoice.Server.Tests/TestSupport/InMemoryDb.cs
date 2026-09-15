@@ -1,6 +1,7 @@
 using CoreChoice.Server.Data;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 
 namespace CoreChoice.Server.Tests;
 
@@ -14,16 +15,20 @@ namespace CoreChoice.Server.Tests;
 /// </summary>
 internal static class InMemoryDb
 {
-    public static IDbContextFactory<ServerDbContext> Create()
+    public static IDbContextFactory<ServerDbContext> Create(params IInterceptor[] interceptors)
     {
         var connection = new SqliteConnection("Filename=:memory:");
         connection.Open();
 
-        var options = new DbContextOptionsBuilder<ServerDbContext>()
-            .UseSqlite(connection)
-            .Options;
+        var builder = new DbContextOptionsBuilder<ServerDbContext>()
+            .UseSqlite(connection);
 
-        return new SingleConnectionFactory(options);
+        if (interceptors.Length > 0)
+        {
+            builder.AddInterceptors(interceptors);
+        }
+
+        return new SingleConnectionFactory(builder.Options);
     }
 
     private sealed class SingleConnectionFactory(DbContextOptions<ServerDbContext> options)
