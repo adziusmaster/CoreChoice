@@ -21,7 +21,7 @@ Three premises from the original brief were corrected against what PurePrep actu
 - **MediatR / CQRS.** PurePrep uses none. It routes minimal APIs to static handler classes and keeps
   port interfaces in an application layer. CoreChoice follows suit. MediatR's behaviour pipeline is a
   genuine fit for cross-cutting coin deduction, but it is a new dependency with a commercial licence
-  above a revenue threshold, and the slice has three endpoints.
+  above a revenue threshold, and the slice has a handful of endpoints.
 - **PostgreSQL.** PurePrep runs SQLite on a mounted Docker volume. CoreChoice does the same. A Postgres
   container is new infrastructure on a box that does not currently need it.
 - **User accounts.** PurePrep has none. Identity is a client-generated GUID held in secure storage.
@@ -48,6 +48,80 @@ That is the only thing they buy. This boundary is worth stating in the UI before
 only in the specification, because a person who has been burned before will assume the wall is coming
 unless told otherwise.
 
+## The free tier
+
+Two grants, both configurable in `CoinOptions` rather than compiled in, because these numbers will be
+tuned against real behaviour and tuning them should not require a release.
+
+| Grant | Amount | When |
+|---|---|---|
+| First contact | 5 coins | The device's first call to the coin endpoint, before any test or account |
+| Profile completion | 5 coins | Once, when a complete 50-item profile is first submitted |
+
+Someone who takes the test therefore has ten analyses before being asked for anything.
+
+The second grant is the load-bearing one. It converts the test from a cost the person pays into
+something that pays them, and it means the sentence offered before item one — *free result, plus five
+free analyses when you finish* — is an inducement rather than a reassurance. Reassurance removes an
+objection; an inducement gives a reason.
+
+This belongs to monetization, which is a later specification, but it is recorded here because it
+changes the onboarding copy and the profile-submission path, both of which are built in this slice.
+
+### Abuse
+
+The completion grant is the obvious hole: clear the app data, retake the test, collect five more coins,
+repeat. Left open, the coin economy is decorative.
+
+The grant is recorded once per device in a `ProfileGrant` table keyed on the device GUID, and is subject
+to the same salted-origin cap that already bounds the first-contact seed — the cap counts grants per
+hashed origin, never per address. A reinstall produces a new GUID, so the device key alone is not
+enough; the origin cap is what makes farming expensive rather than merely tedious.
+
+This is deliberately not airtight. A determined person with a VPN will get more coins, and the cost of
+stopping them exceeds the cost of the tokens they burn. The goal is to make casual farming
+unrewarding, not to win an arms race.
+
+### The server cannot verify completion
+
+The data policy keeps the profile on the device, so the server never sees the 50 answers and cannot
+confirm the test was finished. `POST /api/coins/profile-grant` therefore takes the application's word
+for it, carrying only the device GUID.
+
+This is a conscious trade and the alternative is worse: verifying completion means uploading the
+answers, which trades the product's central privacy promise for protection against a five-coin fraud.
+The grant ledger and the origin cap carry the anti-abuse load instead, exactly as they do for the
+first-contact seed, which is unverifiable in the same way and has run safely in PurePrep.
+
+The endpoint is idempotent — a repeat call returns the current balance unchanged rather than an error —
+so a retry after a dropped connection cannot cost the person their grant or hand them a second one.
+
+## Personas as data
+
+Personas live in a `Persona(Id, DisplayName, Description, SortOrder, IsActive)` table, seeded at startup
+alongside the prompt templates, and are served to the application by `GET /api/personas`. `PersonaId` is
+a validated slug, not a closed enum.
+
+Adding a persona is then two inserted rows — the persona and its prompt template — with no release, no
+domain change, and no app update. That property is worth the round trip, and the application caches the
+list so the cost is paid once per launch. An unknown persona id from a stale cache is rejected by the
+decision endpoint with a clear error rather than falling through to a default.
+
+Six ship in the initial seed:
+
+| Persona | Voice |
+|---|---|
+| Devil's Advocate | Attacks the option you are leaning toward, hardest |
+| Warm Support | Empathetic, validating, names the feeling under the dilemma |
+| Pure Logic | Dispassionate, evidence and trade-offs, no reassurance |
+| The Pragmatist | Cost, time, effort, and reversibility above all |
+| The Long View | Answers as the person you will be in ten years |
+| The Gut Check | Short and decisive, one recommendation, no hedging |
+
+Six covers the range of what people actually want from advice — to be challenged, to be comforted, to be
+reasoned with, to be told what is practical, to be zoomed out, or to be told what to do. Further
+personas are a data question from here, not an engineering one.
+
 ## Decisions
 
 | Area | Decision |
@@ -59,6 +133,8 @@ unless told otherwise.
 | Data at rest (server) | Device GUID, persona, weight, token counts, cost, outcome. Never the profile or the dilemma. |
 | Decision history | On-device SQLite only. |
 | Coin economy | Real ledger in this slice. Play Billing deferred. Coins buy analyses only, never the test result. |
+| Free tier | 5 coins at first contact, 5 more on profile completion. Configurable, not compiled in. |
+| Personas | Database rows, six seeded. Adding one is data, not code. |
 | Deployment | One container on Coldstart's shared Caddy network, as PurePrep does. |
 
 ## Architecture
@@ -73,7 +149,7 @@ src/CoreChoice.Core/            net10.0 — referenced by both app and server
     Infrastructure/             adapters used by the MAUI app
     Ai/                         Gemini client, prompt assembly, response schema
 src/CoreChoice.Server/          net10.0 ASP.NET Core minimal API
-    Endpoints/                  static handler classes
+    Endpoints/                  static handler classes: decisions, coins, personas, dev
     Data/                       entities, DbContext, schema initializer, prompt seed
     Services/                   coin store, prompt store, free-coin policy, IP hashing
 src/CoreChoice/                 net10.0-android MAUI application
@@ -96,7 +172,7 @@ MAUI application needs, and the server supplies its own.
 - `Dilemma` — the two options and their optional context. A `record`. Enforces non-empty options and a
   maximum length, because the option text is prompt input and unbounded input is a cost problem.
 - `DecisionWeight` — the 1-to-5 slider as a value object that refuses values outside its range.
-- `PersonaId` — the advisor persona. A closed set: devil's advocate, warm support, pure logic.
+- `PersonaId` — the advisor persona, a validated slug rather than an enum. See "Personas as data".
 - `DecisionAnalysis` — the structured result. A `record`.
 
 ### Application ports
@@ -130,8 +206,9 @@ Every port method that performs IO takes a `CancellationToken` and returns `Task
    version used, and the outcome.
 7. Return the analysis. On any failure after step 2, refund the coin before propagating.
 
-`CoinsEndpoint` exposes balance and a first-contact seed of free coins, subject to a per-origin cap
-keyed on a salted hash of the client address — never the address itself. `DevEndpoint` grants coins
+`CoinsEndpoint` exposes balance, the first-contact seed of free coins, and the once-per-device profile
+completion grant. Both grants are subject to a per-origin cap keyed on a salted hash of the client
+address — never the address itself. `PersonasEndpoint` serves the active persona list. `DevEndpoint` grants coins
 behind a shared-secret filter and closes entirely when the secret is unset.
 
 ### Prompts in the database
@@ -179,8 +256,8 @@ locally without a key and the integration tests need no network.
   immediately on completion and available thereafter. Rendered entirely from local data. It takes no
   dependency on `ICoinLedgerClient`, which makes the free-result invariant structural rather than a
   matter of remembering.
-- `DilemmaViewModel` — two option fields, a persona picker, a 1-to-5 weight slider, and a dictation
-  button bound to `IVoiceDictation`.
+- `DilemmaViewModel` — two option fields, a persona picker populated from the cached persona list, a
+  1-to-5 weight slider, and a dictation button bound to `IVoiceDictation`.
 - `AnalysisViewModel` — renders `DecisionAnalysis`, and states plainly when an analysis was generic.
 - `CoinsViewModel` — balance and history. The purchase path is stubbed in this slice.
 
@@ -195,10 +272,14 @@ minutes. When the test is offered, the offer says in plain words that the result
 objection to a ten-minute questionnaire is rarely the ten minutes, it is the suspicion of what waits at
 the end.
 
-The first analysis is available without a profile and is labelled generic. Subsequent personalized
-analyses require the completed test. The generic answer demonstrates the product, and the difference
-between it and a personalized one is the argument for taking the test — a better argument than a wall
-raised at the moment of highest intent. The free-coin ledger already bounds the cost of that taste.
+Analyses are available without a profile and are labelled generic. They cost a coin like any other, as
+they consume exactly the same Gemini call; the five first-contact coins are what pays for exploring.
+The generic answer demonstrates the product, and the gap between it and a personalized one is the
+argument for taking the test — a better argument than a wall raised at the moment of highest intent.
+
+The generic result therefore carries the offer: the same dilemma, answered against your actual
+personality, plus five more analyses, for ten minutes. That is the conversion moment, and it lands
+after the person has seen the product work rather than before.
 
 ## Data flow
 
@@ -230,6 +311,8 @@ sequenceDiagram
 | Gemini unavailable or times out | Coin refunded, 503, app offers retry |
 | Gemini returns unparseable output | Coin refunded, 502, logged with the prompt version |
 | Rate limit exceeded | 429, no spend |
+| Unknown or inactive persona | 400 before any spend, never a silent fallback to a default |
+| Repeat profile-completion grant | 200 with the unchanged balance, no second credit |
 | Concurrent spend against a balance of one | Exactly one succeeds; the conditional update guarantees it |
 
 Every path that spends a coin refunds it on failure. The ledger is the thing a person notices going
@@ -255,6 +338,8 @@ The heaviest coverage sits on:
   produces the full profile, and the ledger is untouched. Written as a test rather than trusted to
   discipline, because this is the invariant most likely to be eroded later by a plausible-sounding
   growth argument.
+- The profile-completion grant: it credits once, a second call is idempotent rather than a second
+  grant, and it is refused once the per-origin cap is reached.
 
 ## Deployment
 
