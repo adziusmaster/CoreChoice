@@ -5,7 +5,9 @@ namespace CoreChoice.Core.Tests;
 /// <summary>Returns a queued sequence of responses, and records the requests it was given.</summary>
 internal sealed class StubHttpMessageHandler : HttpMessageHandler
 {
-    private readonly (HttpStatusCode Status, string Body, string MediaType)[] _responses;
+    private readonly (HttpStatusCode Status, string Body, string MediaType)[] _snapshotResponses;
+    private readonly Func<HttpResponseMessage>[] _factoryResponses;
+    private readonly bool _useFactories;
     private int _index;
 
     public StubHttpMessageHandler(params HttpResponseMessage[] responses)
@@ -14,7 +16,7 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
         // constructs a brand-new HttpResponseMessage per call; it can never be asked to reuse one the
         // caller has already disposed. Once the queue is "exhausted" we must therefore synthesize a
         // fresh instance rather than hand back (or read from) an object that may already be disposed.
-        _responses = responses
+        _snapshotResponses = responses
             .Select(r => (
                 r.StatusCode,
                 r.Content?.ReadAsStringAsync().GetAwaiter().GetResult() ?? string.Empty,
@@ -23,6 +25,17 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
 
         foreach (var r in responses)
             r.Dispose();
+
+        _factoryResponses = [];
+        _useFactories = false;
+    }
+
+    /// <summary>Constructor overload for response factories, used when responses contain content that cannot be snapshotted eagerly (e.g., content that throws on serialization).</summary>
+    public StubHttpMessageHandler(params Func<HttpResponseMessage>[] responseFactories)
+    {
+        _factoryResponses = responseFactories;
+        _snapshotResponses = [];
+        _useFactories = true;
     }
 
     public List<string> RequestBodies { get; } = [];
@@ -35,13 +48,22 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
             ? string.Empty
             : await request.Content.ReadAsStringAsync(cancellationToken));
 
-        var (status, body, mediaType) = _responses[Math.Min(_index, _responses.Length - 1)];
-        _index++;
-
-        return new HttpResponseMessage(status)
+        if (_useFactories)
         {
-            Content = new StringContent(body, System.Text.Encoding.UTF8, mediaType),
-        };
+            var factory = _factoryResponses[Math.Min(_index, _factoryResponses.Length - 1)];
+            _index++;
+            return factory();
+        }
+        else
+        {
+            var (status, body, mediaType) = _snapshotResponses[Math.Min(_index, _snapshotResponses.Length - 1)];
+            _index++;
+
+            return new HttpResponseMessage(status)
+            {
+                Content = new StringContent(body, System.Text.Encoding.UTF8, mediaType),
+            };
+        }
     }
 
     public static HttpResponseMessage Json(string body, HttpStatusCode status = HttpStatusCode.OK) =>

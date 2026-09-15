@@ -6,6 +6,23 @@ using Microsoft.Extensions.Options;
 
 namespace CoreChoice.Core.Tests.Ai;
 
+/// <summary>
+/// A response body that fails partway through being read, the way a dropped connection does.
+/// In-memory StringContent cannot reproduce this, which is why the retry-on-body-failure path
+/// had no coverage.
+/// </summary>
+internal sealed class FailingHttpContent : HttpContent
+{
+    protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) =>
+        throw new HttpRequestException("The connection was closed while reading the response body.");
+
+    protected override bool TryComputeLength(out long length)
+    {
+        length = 0;
+        return false;
+    }
+}
+
 public class GeminiClientTests
 {
     private static GeminiClient Build(StubHttpMessageHandler handler, string? apiKey = "test-key") =>
@@ -221,5 +238,24 @@ public class GeminiClientTests
 
         // Assert
         await act.Should().ThrowAsync<InvalidOperationException>();
+    }
+
+    [Fact]
+    public async Task AnalyseAsync_WhenResponseBodyFailsWhileBeingRead_ShouldRetryAndSucceed()
+    {
+        // Arrange — a first response with headers that succeed (200) but body that fails mid-read,
+        // followed by a valid response. The retry handling must catch the body failure, backoff, and retry.
+        var handler = new StubHttpMessageHandler(
+            () => new HttpResponseMessage(HttpStatusCode.OK) { Content = new FailingHttpContent() },
+            () => StubHttpMessageHandler.Json(StubHttpMessageHandler.Envelope(StubHttpMessageHandler.ValidAnalysis)));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        handler.CallCount.Should().Be(2);
+        result.Analysis.Recommendation.Should().Be("Take the job in Berlin");
+        result.Analysis.Confidence.Should().Be(68);
     }
 }
