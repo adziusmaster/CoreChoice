@@ -79,4 +79,24 @@ public class OceanProfileTests
         // Assert
         agreeableness.Value.Should().Be(40);
     }
+
+    [Fact]
+    public void None_ShouldBeDistinguishableFromAGenuineAllZeroProfile()
+    {
+        // Arrange — "has not taken the test" and "scored zero on everything" are different facts.
+        // If IsPresent were ever derived from the trait values instead of set at construction,
+        // these two would collapse into one and every unprofiled analysis would claim to be
+        // personalized. This test is the tripwire for that refactor.
+        var genuineAllZero = new OceanProfile(
+            TraitScore.From(0), TraitScore.From(0), TraitScore.From(0),
+            TraitScore.From(0), TraitScore.From(0));
+
+        // Act
+        var none = OceanProfile.None;
+
+        // Assert
+        none.IsPresent.Should().BeFalse();
+        genuineAllZero.IsPresent.Should().BeTrue();
+        none.Should().NotBe(genuineAllZero);
+    }
 }

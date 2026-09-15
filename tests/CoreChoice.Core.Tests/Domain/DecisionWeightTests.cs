@@ -41,6 +41,9 @@ public class DecisionWeightTests
 
         // Assert
         descriptions.Should().OnlyHaveUniqueItems();
-        descriptions.All(d => !string.IsNullOrWhiteSpace(d)).Should().BeTrue();
+        // A method group cannot convert to an Expression<Func<string,bool>>, so the predicate is
+        // written out. NotContain keeps the failure message that All().BeTrue() throws away —
+        // "Expected true, found false" names neither the offending value nor the collection.
+        descriptions.Should().NotContain(d => string.IsNullOrWhiteSpace(d));
     }
 }
