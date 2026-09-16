@@ -85,6 +85,38 @@ public class GeminiClientTests
         result.Analysis.IsPersonalized.Should().BeFalse();
     }
 
+    [Theory]
+    [InlineData(70.0)]
+    [InlineData(69.6)]
+    public async Task AnalyseAsync_WhenConfidenceIsAFractionalNumber_ShouldParseAndRoundToTheNearestWholePoint(
+        double confidence)
+    {
+        // Arrange — DecisionSchema declares confidence as NUMBER, not INTEGER: a real Gemini
+        // response can legitimately emit "70.0" for a whole-number confidence, and a model that
+        // drifts from the schema could emit a genuine fraction like "69.6". Both must parse into the
+        // domain's int Confidence rather than fail deserialization and turn a good analysis into a
+        // 502-with-refund.
+        var analysisJson = $$"""
+            {
+              "recommendation": "Take the job in Berlin",
+              "confidence": {{confidence.ToString(System.Globalization.CultureInfo.InvariantCulture)}},
+              "reasoning": ["The upside compounds", "The downside is bounded"],
+              "optionA": { "strengths": ["Growth"], "risks": ["Uprooting"] },
+              "optionB": { "strengths": ["Stability"], "risks": ["Stagnation"] },
+              "personalityNote": "Your high openness favours the unfamiliar option."
+            }
+            """;
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json(StubHttpMessageHandler.Envelope(analysisJson)));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.AnalyseAsync("system", "user", personalized: true);
+
+        // Assert
+        result.Analysis.Confidence.Should().Be(70);
+    }
+
     [Fact]
     public async Task AnalyseAsync_WhenTheModelReturnsNonSchemaJson_ShouldThrowMalformed()
     {

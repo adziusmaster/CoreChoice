@@ -26,7 +26,12 @@ internal static class DecisionSchema
         properties = new
         {
             recommendation = new { type = "STRING" },
-            confidence = new { type = "INTEGER" },
+            // NUMBER, not INTEGER: the spec describes confidence as a number, and a real Gemini
+            // response can legitimately emit "70.0" for a whole-number confidence. Declaring this
+            // INTEGER makes that a schema violation the model never actually commits, but a "70.0"
+            // that slips through as a bare JSON number still fails a strict int deserialization on
+            // our side — see GeminiClient.Payload.Confidence, which is a double for the same reason.
+            confidence = new { type = "NUMBER" },
             reasoning = new { type = "ARRAY", items = new { type = "STRING" } },
             optionA = OptionSchema,
             optionB = OptionSchema,

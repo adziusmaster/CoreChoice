@@ -63,12 +63,16 @@ internal sealed class SqliteCoinStore(IDbContextFactory<ServerDbContext> factory
 
         // One statement, evaluated by the database. A read-then-write here loses the double-tap
         // race, which is the realistic way a person spends a coin they do not have.
+        // Raw SQL bypasses EF's value converters entirely, so UpdatedAt is written as UTC ticks
+        // (a long) explicitly here, matching the HasConversion(Ticks.To, Ticks.From) that
+        // OnModelCreating applies to every tracked write of this column — otherwise this statement
+        // would leave the column mixing two different on-disk representations.
         var affected = await db.Database.ExecuteSqlRawAsync(
             """
             UPDATE "Coins" SET "Balance" = "Balance" - {0}, "UpdatedAt" = {1}
             WHERE "DeviceId" = {2} AND "Balance" >= {0}
             """,
-            [amount, DateTimeOffset.UtcNow, deviceId], ct);
+            [amount, DateTimeOffset.UtcNow.UtcTicks, deviceId], ct);
 
         return affected > 0;
     }
@@ -76,12 +80,14 @@ internal sealed class SqliteCoinStore(IDbContextFactory<ServerDbContext> factory
     public async Task RefundAsync(Guid deviceId, int amount, CancellationToken ct = default)
     {
         await using var db = await factory.CreateDbContextAsync(ct);
+        // Same reasoning as TrySpendAsync above: written as ticks, not DateTimeOffset, to agree
+        // with the column's value conversion.
         await db.Database.ExecuteSqlRawAsync(
             """
             UPDATE "Coins" SET "Balance" = "Balance" + {0}, "UpdatedAt" = {1}
             WHERE "DeviceId" = {2}
             """,
-            [amount, DateTimeOffset.UtcNow, deviceId], ct);
+            [amount, DateTimeOffset.UtcNow.UtcTicks, deviceId], ct);
     }
 
     public async Task<int> GrantAsync(Guid deviceId, int amount, CancellationToken ct = default)

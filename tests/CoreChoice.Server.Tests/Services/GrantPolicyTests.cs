@@ -69,6 +69,52 @@ public class GrantPolicyTests
     }
 
     [Fact]
+    public async Task EnsureSeededAsync_WhenTheCallerDisconnectsAfterTheMarkerRowCommits_ShouldStillCreditTheCoins()
+    {
+        // Arrange — C-1 from the final review: the DeviceSeed marker row is written and committed
+        // with the caller's token, then the coin credit runs through a separate DbContext/connection
+        // with the SAME token. If that token is cancelled the instant the marker row lands — the
+        // realistic shape of a dropped connection — a pre-fix EnsureSeededAsync loses the credit
+        // entirely: the device is left recorded as seeded with a balance of zero, and every retry
+        // short-circuits on `alreadySeeded` forever. The interceptor cancels `cts` right after the
+        // marker row's SaveChangesAsync (the first INSERT issued through the intercepting factory)
+        // completes, so the credit call is made with an already-cancelled token — exactly the window
+        // the fix closes by passing CancellationToken.None to it instead.
+        //
+        // Schema creation runs through a separate, uninstrumented factory sharing the same
+        // connection: schema setup issues its own INSERT/CREATE TABLE commands, and running it
+        // through the intercepting factory would fire (and consume) the interceptor before the test
+        // even starts.
+        var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        try
+        {
+            var plainFactory = new OptionsFactory(
+                new DbContextOptionsBuilder<ServerDbContext>().UseSqlite(connection).Options);
+            await SchemaInitializer.InitializeAsync(plainFactory);
+            var coins = new SqliteCoinStore(plainFactory);
+
+            using var cts = new CancellationTokenSource();
+            var interceptor = new CancelAfterFirstWriteInterceptor(cts);
+            var interceptingFactory = new OptionsFactory(
+                new DbContextOptionsBuilder<ServerDbContext>().UseSqlite(connection).AddInterceptors(interceptor).Options);
+            var policy = new SqliteGrantPolicy(interceptingFactory, coins, Options.Create(new CoinOptions()));
+            var device = Guid.NewGuid();
+
+            // Act
+            var balance = await policy.EnsureSeededAsync(device, "origin-a", cts.Token);
+
+            // Assert
+            balance.Should().Be(5,
+                "the marker row was already committed, so the credit it promises must land even though the caller's token was cancelled the instant it committed");
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    [Fact]
     public async Task TryGrantProfileCompletionAsync_OnFirstClaim_ShouldAddTheGrant()
     {
         // Arrange
@@ -110,6 +156,54 @@ public class GrantPolicyTests
         await using var db = await factory.CreateDbContextAsync();
         var grantCount = await db.ProfileGrants.CountAsync(x => x.DeviceId == device);
         grantCount.Should().Be(1, "exactly one ProfileGrant row must ever exist for this device");
+    }
+
+    [Fact]
+    public async Task TryGrantProfileCompletionAsync_WhenTheCallerDisconnectsAfterTheMarkerRowCommits_ShouldStillCreditTheCoins()
+    {
+        // Arrange — the second half of C-1: same shape as the EnsureSeededAsync regression above,
+        // but for the profile-completion grant. Two SqliteGrantPolicy instances share one
+        // connection: the first seeds the device with a plain, uninstrumented factory; the second
+        // — built on a factory carrying the cancelling interceptor — performs the profile-completion
+        // claim under test. That interceptor only sees commands issued through the grant policy's
+        // own DbContext (the ProfileGrant marker insert), so it fires exactly once, right after that
+        // row commits, and cancels `cts` before TryGrantProfileCompletionAsync reaches the credit
+        // call — reproducing the exact window the fix in GrantPolicy.cs closes.
+        var connection = new SqliteConnection("Filename=:memory:");
+        await connection.OpenAsync();
+        try
+        {
+            var plainFactory = new OptionsFactory(
+                new DbContextOptionsBuilder<ServerDbContext>().UseSqlite(connection).Options);
+            await SchemaInitializer.InitializeAsync(plainFactory);
+            var coins = new SqliteCoinStore(plainFactory);
+            var device = Guid.NewGuid();
+            await new SqliteGrantPolicy(plainFactory, coins, Options.Create(new CoinOptions()))
+                .EnsureSeededAsync(device, "origin-a");
+
+            using var cts = new CancellationTokenSource();
+            var interceptor = new CancelAfterFirstWriteInterceptor(cts);
+            var interceptingFactory = new OptionsFactory(
+                new DbContextOptionsBuilder<ServerDbContext>().UseSqlite(connection).AddInterceptors(interceptor).Options);
+            var policyUnderTest = new SqliteGrantPolicy(interceptingFactory, coins, Options.Create(new CoinOptions()));
+
+            // Act
+            var outcome = await policyUnderTest.TryGrantProfileCompletionAsync(device, "origin-a", cts.Token);
+
+            // Assert
+            outcome.Granted.Should().BeTrue();
+            outcome.Balance.Should().Be(10,
+                "the ProfileGrant marker row was already committed, so the credit it promises must land even though the caller's token was cancelled the instant it committed");
+        }
+        finally
+        {
+            connection.Dispose();
+        }
+    }
+
+    private sealed class OptionsFactory(DbContextOptions<ServerDbContext> options) : IDbContextFactory<ServerDbContext>
+    {
+        public ServerDbContext CreateDbContext() => new(options);
     }
 
     [Fact]

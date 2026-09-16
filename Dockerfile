@@ -10,8 +10,11 @@ RUN dotnet restore CoreChoice.Server/CoreChoice.Server.csproj \
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
-# Install curl for the compose healthcheck (the aspnet base image ships neither wget nor curl).
-RUN apt-get update && apt-get install -y --no-install-recommends curl && rm -rf /var/lib/apt/lists/*
+# Install operational tools the aspnet base image ships neither of: curl for the compose
+# healthcheck, and sqlite3 for DEPLOY.md's prompt-change procedure (edits the live database
+# in-container, without a redeploy). Neither is unused even though nothing in the app itself
+# calls them.
+RUN apt-get update && apt-get install -y --no-install-recommends curl sqlite3 && rm -rf /var/lib/apt/lists/*
 COPY --from=build /app .
 # SQLite database persists on a mounted volume.
 VOLUME /data

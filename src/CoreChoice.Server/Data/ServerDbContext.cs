@@ -13,11 +13,18 @@ internal sealed class ServerDbContext(DbContextOptions<ServerDbContext> options)
 
     protected override void OnModelCreating(ModelBuilder b)
     {
-        b.Entity<DeviceCoins>().HasKey(x => x.DeviceId);
+        // UTC ticks, not DateTimeOffset, on every date column: EF Core's SQLite provider cannot
+        // translate DateTimeOffset comparisons, and left as DateTimeOffset a filter silently moves
+        // client-side and loads the whole table. Nothing range-queries the ledger's timestamps
+        // today, but once real balances live here, changing the storage format becomes a migration
+        // on live money data — cheaper to match the rest of the schema now than after first deploy.
+        b.Entity<DeviceCoins>(e =>
+        {
+            e.HasKey(x => x.DeviceId);
+            e.Property(x => x.CreatedAt).HasConversion(Ticks.To, Ticks.From);
+            e.Property(x => x.UpdatedAt).HasConversion(Ticks.To, Ticks.From);
+        });
 
-        // UTC ticks, not DateTimeOffset: EF Core's SQLite provider cannot translate DateTimeOffset
-        // comparisons, and both the cap query and the retention sweep filter on these columns. Left
-        // as DateTimeOffset, the filter silently moves client-side and loads the whole table.
         b.Entity<DeviceSeed>(e =>
         {
             e.HasKey(x => x.DeviceId);

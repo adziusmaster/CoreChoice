@@ -126,6 +126,32 @@ public class DecisionEndpointTests
     }
 
     [Fact]
+    public async Task Generate_WhenGeminiIsUnavailableAndTheFailureLogWriteThrows_ShouldStillReturnServiceUnavailable()
+    {
+        // Arrange — M-4/Fix 5 from the final review: the failure-path LogUsageAsync call happens
+        // before the response is returned, so if it throws, an unguarded call falls through to the
+        // catch-all and the person sees a 500 instead of the specific status the spec promises. The
+        // refund already happened first, so no money is at risk — only the status code would be
+        // wrong. The interceptor throws on the UsageLogs insert that the failure path writes.
+        var gemini = Substitute.For<IGeminiClient>();
+        gemini.AnalyseAsync(default!, default!, default, default)
+            .ThrowsAsyncForAnyArgs(new DecisionUnavailableException("down"));
+        var factory = new CoreChoiceAppFactory(gemini, new ThrowOnUsageLogInsertInterceptor());
+        var client = factory.CreateClient();
+        var device = Guid.NewGuid();
+        await SeedAsync(client, device);
+
+        // Act
+        var response = await client.PostAsJsonAsync("/api/decisions", Body(device));
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.ServiceUnavailable,
+            "a logging failure must never downgrade the specific status the endpoint already decided on");
+        var balance = await client.GetFromJsonAsync<BalanceDto>($"/api/coins/{device}");
+        balance!.Balance.Should().Be(5, "the refund does not depend on the log write succeeding");
+    }
+
+    [Fact]
     public async Task Generate_WhenTheModelReturnsGarbage_ShouldRefundAndReturnBadGateway()
     {
         // Arrange

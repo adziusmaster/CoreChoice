@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
@@ -16,7 +17,8 @@ namespace CoreChoice.Server.Tests;
 /// Real routing, real DI, real middleware: an endpoint test that stubs the host proves only that the
 /// handler compiles.
 /// </summary>
-internal sealed class CoreChoiceAppFactory(IGeminiClient gemini) : WebApplicationFactory<Program>
+internal sealed class CoreChoiceAppFactory(IGeminiClient gemini, params IInterceptor[] dbInterceptors)
+    : WebApplicationFactory<Program>
 {
     private readonly SqliteConnection _connection = new("Filename=:memory:");
 
@@ -35,7 +37,11 @@ internal sealed class CoreChoiceAppFactory(IGeminiClient gemini) : WebApplicatio
 
             services.RemoveAll(typeof(IDbContextFactory<ServerDbContext>));
             services.RemoveAll(typeof(DbContextOptions<ServerDbContext>));
-            services.AddDbContextFactory<ServerDbContext>(o => o.UseSqlite(_connection));
+            services.AddDbContextFactory<ServerDbContext>(o =>
+            {
+                o.UseSqlite(_connection);
+                if (dbInterceptors.Length > 0) o.AddInterceptors(dbInterceptors);
+            });
 
             services.RemoveAll(typeof(IGeminiClient));
             services.AddSingleton(gemini);

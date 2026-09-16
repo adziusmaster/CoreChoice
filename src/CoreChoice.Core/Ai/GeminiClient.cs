@@ -98,7 +98,11 @@ public sealed class GeminiClient(
 
             var analysis = new DecisionAnalysis(
                 payload.Recommendation.Trim(),
-                Math.Clamp(payload.Confidence, 0, 100),
+                // The wire value is a double (see Payload.Confidence) because a real Gemini response
+                // can emit "70.0" for a whole-number confidence; DecisionAnalysis.Confidence stays an
+                // int, so clamp first (guarding against an out-of-range or fractional value from a
+                // model that ignores the schema) and then round to the nearest whole point.
+                (int)Math.Round(Math.Clamp(payload.Confidence, 0, 100), MidpointRounding.AwayFromZero),
                 Clean(payload.Reasoning),
                 new OptionAssessment("A", Clean(payload.OptionA.Strengths), Clean(payload.OptionA.Risks)),
                 new OptionAssessment("B", Clean(payload.OptionB.Strengths), Clean(payload.OptionB.Risks)),
@@ -191,7 +195,7 @@ public sealed class GeminiClient(
     private sealed class Payload
     {
         [JsonPropertyName("recommendation")] public string? Recommendation { get; set; }
-        [JsonPropertyName("confidence")] public int Confidence { get; set; }
+        [JsonPropertyName("confidence")] public double Confidence { get; set; }
         [JsonPropertyName("reasoning")] public string[]? Reasoning { get; set; }
         [JsonPropertyName("optionA")] public Side? OptionA { get; set; }
         [JsonPropertyName("optionB")] public Side? OptionB { get; set; }

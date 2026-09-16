@@ -94,8 +94,8 @@ internal static class DecisionEndpoint
             // throws to say so. CancellationToken.None guarantees the refund and its failure-path
             // log land regardless of what the request's own token is doing.
             await coins.RefundAsync(request.DeviceId, price, CancellationToken.None);
-            await LogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
-                profile.IsPresent, TokenUsage.Empty, success: false, CancellationToken.None);
+            await TryLogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
+                profile.IsPresent, TokenUsage.Empty, success: false, logger);
 
             // Logged with the prompt version on purpose: an unparseable response is the shape a
             // successful injection takes, and the version is the first thing to check.
@@ -110,8 +110,8 @@ internal static class DecisionEndpoint
             // Same principle as above: this branch is reached BECAUSE the request was cancelled, so
             // `ct` is exactly the token that must not be used to guard the compensating action.
             await coins.RefundAsync(request.DeviceId, price, CancellationToken.None);
-            await LogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
-                profile.IsPresent, TokenUsage.Empty, success: false, CancellationToken.None);
+            await TryLogUsageAsync(dbFactory, deviceHash, persona, prompt.Version, weight,
+                profile.IsPresent, TokenUsage.Empty, success: false, logger);
 
             return Results.Json(new { error = "The advisor is temporarily unavailable. Please try again." },
                 statusCode: StatusCodes.Status503ServiceUnavailable);
@@ -134,6 +134,35 @@ internal static class DecisionEndpoint
                 TraitScore.From(dto.Extraversion),
                 TraitScore.From(dto.Agreeableness),
                 TraitScore.From(dto.Neuroticism));
+
+    /// <summary>
+    /// Runs the failure-path usage log write, but never lets it change the response: the refund has
+    /// already happened by the time this is called, so no money is at risk, but an unguarded
+    /// exception here would fall through to the catch-all and turn a specific 502/503 into a bare
+    /// 500 — the log write failing is not the caller's problem to see.
+    /// </summary>
+    private static async Task TryLogUsageAsync(
+        IDbContextFactory<ServerDbContext> dbFactory,
+        string deviceHash,
+        PersonaId persona,
+        int promptVersion,
+        DecisionWeight weight,
+        bool personalized,
+        TokenUsage usage,
+        bool success,
+        ILogger logger)
+    {
+        try
+        {
+            await LogUsageAsync(dbFactory, deviceHash, persona, promptVersion, weight,
+                personalized, usage, success, CancellationToken.None);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to record the failure-path usage log for persona {Persona}.",
+                persona.Value);
+        }
+    }
 
     private static async Task LogUsageAsync(
         IDbContextFactory<ServerDbContext> dbFactory,

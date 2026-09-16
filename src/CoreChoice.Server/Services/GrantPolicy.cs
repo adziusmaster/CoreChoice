@@ -52,7 +52,12 @@ internal sealed class SqliteGrantPolicy(
             return await coins.GetBalanceAsync(deviceId, ct);
         }
 
-        return await coins.EnsureDeviceAsync(deviceId, amount, ct);
+        // The DeviceSeed marker row above is already committed at this point: if this credit is
+        // cancelled by the same token, the device is left recorded as seeded while holding zero
+        // coins, and every retry short-circuits on the `alreadySeeded` check above and returns the
+        // unchanged (zero) balance forever. CancellationToken.None guarantees the credit that the
+        // marker row promises actually lands, regardless of what the caller's connection is doing.
+        return await coins.EnsureDeviceAsync(deviceId, amount, CancellationToken.None);
     }
 
     public async Task<GrantOutcome> TryGrantProfileCompletionAsync(
@@ -86,7 +91,11 @@ internal sealed class SqliteGrantPolicy(
             return new GrantOutcome(false, await coins.GetBalanceAsync(deviceId, ct), "already-granted");
         }
 
-        var balance = await coins.GrantAsync(deviceId, _options.ProfileCompletionGrant, ct);
+        // Same shape as EnsureSeededAsync above: the ProfileGrant marker row is already committed,
+        // so a cancellation here must not be allowed to strand the device as "already granted" with
+        // nothing to show for it. CancellationToken.None ensures the credit this row promises is
+        // applied even if the caller has already disconnected.
+        var balance = await coins.GrantAsync(deviceId, _options.ProfileCompletionGrant, CancellationToken.None);
         return new GrantOutcome(true, balance, null);
     }
 
