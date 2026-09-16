@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.ProfilePage"
+             x:DataType="presentation:ProfileViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="24,52,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="YOURS, FREE, PERMANENTLY" Style="{StaticResource MicroLabel}"
+                       TextColor="{DynamicResource Accent}" FontSize="12" Margin="0,0,0,12" />
+
+                <Label Text="This is how you tend to decide."
+                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.28" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,20" />
+
+                <VerticalStackLayout Spacing="16" Margin="0,0,0,20">
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Openness" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Ink}" />
+                            <Label Grid.Column="1" Text="{Binding Profile.Openness, Converter={StaticResource TraitBandLabelConverter}}" FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}" />
+                        </Grid>
+                        <Grid HeightRequest="14">
+                            <BoxView Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" HorizontalOptions="Fill" />
+                            <AbsoluteLayout HorizontalOptions="Fill" VerticalOptions="Fill">
+                                <BoxView AbsoluteLayout.LayoutFlags="PositionProportional"
+                                         AbsoluteLayout.LayoutBounds="{Binding Profile.Openness, Converter={StaticResource TraitDotBoundsConverter}}"
+                                         WidthRequest="10" HeightRequest="10" CornerRadius="5"
+                                         Color="{DynamicResource Accent}" />
+                            </AbsoluteLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Conscientiousness" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Ink}" />
+                            <Label Grid.Column="1" Text="{Binding Profile.Conscientiousness, Converter={StaticResource TraitBandLabelConverter}}" FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}" />
+                        </Grid>
+                        <Grid HeightRequest="14">
+                            <BoxView Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" HorizontalOptions="Fill" />
+                            <AbsoluteLayout HorizontalOptions="Fill" VerticalOptions="Fill">
+                                <BoxView AbsoluteLayout.LayoutFlags="PositionProportional"
+                                         AbsoluteLayout.LayoutBounds="{Binding Profile.Conscientiousness, Converter={StaticResource TraitDotBoundsConverter}}"
+                                         WidthRequest="10" HeightRequest="10" CornerRadius="5"
+                                         Color="{DynamicResource Accent}" />
+                            </AbsoluteLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Extraversion" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Ink}" />
+                            <Label Grid.Column="1" Text="{Binding Profile.Extraversion, Converter={StaticResource TraitBandLabelConverter}}" FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}" />
+                        </Grid>
+                        <Grid HeightRequest="14">
+                            <BoxView Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" HorizontalOptions="Fill" />
+                            <AbsoluteLayout HorizontalOptions="Fill" VerticalOptions="Fill">
+                                <BoxView AbsoluteLayout.LayoutFlags="PositionProportional"
+                                         AbsoluteLayout.LayoutBounds="{Binding Profile.Extraversion, Converter={StaticResource TraitDotBoundsConverter}}"
+                                         WidthRequest="10" HeightRequest="10" CornerRadius="5"
+                                         Color="{DynamicResource Accent}" />
+                            </AbsoluteLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Agreeableness" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Ink}" />
+                            <Label Grid.Column="1" Text="{Binding Profile.Agreeableness, Converter={StaticResource TraitBandLabelConverter}}" FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}" />
+                        </Grid>
+                        <Grid HeightRequest="14">
+                            <BoxView Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" HorizontalOptions="Fill" />
+                            <AbsoluteLayout HorizontalOptions="Fill" VerticalOptions="Fill">
+                                <BoxView AbsoluteLayout.LayoutFlags="PositionProportional"
+                                         AbsoluteLayout.LayoutBounds="{Binding Profile.Agreeableness, Converter={StaticResource TraitDotBoundsConverter}}"
+                                         WidthRequest="10" HeightRequest="10" CornerRadius="5"
+                                         Color="{DynamicResource Accent}" />
+                            </AbsoluteLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0" Text="Neuroticism" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Ink}" />
+                            <Label Grid.Column="1" Text="{Binding Profile.Neuroticism, Converter={StaticResource TraitBandLabelConverter}}" FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}" />
+                        </Grid>
+                        <Grid HeightRequest="14">
+                            <BoxView Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" HorizontalOptions="Fill" />
+                            <AbsoluteLayout HorizontalOptions="Fill" VerticalOptions="Fill">
+                                <BoxView AbsoluteLayout.LayoutFlags="PositionProportional"
+                                         AbsoluteLayout.LayoutBounds="{Binding Profile.Neuroticism, Converter={StaticResource TraitDotBoundsConverter}}"
+                                         WidthRequest="10" HeightRequest="10" CornerRadius="5"
+                                         Color="{DynamicResource Accent}" />
+                            </AbsoluteLayout>
+                        </Grid>
+                    </VerticalStackLayout>
+
+                </VerticalStackLayout>
+
+                <Border Style="{StaticResource CardBorder}" Padding="16" Margin="0,0,0,14">
+                    <Label Text="{Binding Summary}"
+                           FontFamily="Lora" FontSize="16" LineHeight="1.58"
+                           TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+                </Border>
+
+                <Border Style="{StaticResource AccentCardBorder}" Padding="14,14,16,14" Margin="0,0,0,14"
+                        IsVisible="{Binding GrantMessage, Converter={StaticResource IsNotEmptyConverter}}">
+                    <Grid ColumnDefinitions="18,11,*">
+                        <Label Grid.Column="0" Text="&#10003;" FontFamily="DMSansBold" FontSize="13"
+                               TextColor="{DynamicResource Accent}" HorizontalTextAlignment="Center" VerticalOptions="Center" />
+                        <Label Grid.Column="2" Text="{Binding GrantMessage}"
+                               FontFamily="DMSans" FontSize="14" LineHeight="1.5"
+                               TextColor="{DynamicResource Ink}" VerticalOptions="Center" LineBreakMode="WordWrap" />
+                    </Grid>
+                </Border>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
+            <Label Text="Kept on this phone. Retake it whenever you like."
+                   FontFamily="DMSans" FontSize="12.5" LineHeight="1.55"
+                   TextColor="{DynamicResource Faint}" Margin="0,0,0,16" />
+            <Button Text="Ask it something" Style="{StaticResource PrimaryButton}" Clicked="OnAskClicked" />
+        </VerticalStackLayout>
+
+    </Grid>
+</ContentPage>

@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.TestPage"
+             x:DataType="presentation:TestViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="LikertButton" TargetType="Button">
+                <Setter Property="HeightRequest" Value="46" />
+                <Setter Property="CornerRadius" Value="8" />
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="BorderWidth" Value="1" />
+                <Setter Property="BorderColor" Value="{DynamicResource Line}" />
+                <Setter Property="TextColor" Value="{DynamicResource Faint}" />
+                <Setter Property="FontFamily" Value="DMSans" />
+                <Setter Property="FontSize" Value="13" />
+                <Setter Property="Padding" Value="0" />
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="24,56,24,24">
+
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,2">
+            <Label Grid.Column="0"
+                   Text="{Binding AnsweredCount, Converter={StaticResource TestPositionConverter}}"
+                   FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
+                   MinimumHeightRequest="44" VerticalTextAlignment="Center" />
+            <Label x:Name="PauseLabel" Grid.Column="1"
+                   Text="Pause"
+                   FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Faint}"
+                   MinimumHeightRequest="44" MinimumWidthRequest="44"
+                   VerticalTextAlignment="Center" HorizontalTextAlignment="End">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnPauseTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+        </Grid>
+
+        <Grid Grid.Row="1" HeightRequest="2" Margin="0,0,0,34">
+            <BoxView Color="{DynamicResource Line}" CornerRadius="1" HeightRequest="2" HorizontalOptions="Fill" />
+            <Grid HeightRequest="2" HorizontalOptions="Fill">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition x:Name="FillColumn" Width="0*" />
+                    <ColumnDefinition x:Name="RestColumn" Width="1*" />
+                </Grid.ColumnDefinitions>
+                <BoxView Grid.Column="0" Color="{DynamicResource Accent}" CornerRadius="1" HeightRequest="2" />
+            </Grid>
+        </Grid>
+
+        <Label Grid.Row="2" Text="How accurately does each describe you?"
+               FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}"
+               Margin="0,0,0,24" />
+
+        <ScrollView Grid.Row="3">
+            <VerticalStackLayout Spacing="0">
+
+                <VerticalStackLayout Spacing="26" BindableLayout.ItemsSource="{Binding CurrentPage}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="presentation:TestItem">
+                            <VerticalStackLayout Spacing="0">
+                                <Label Text="{Binding Text}"
+                                       FontFamily="Lora" FontSize="19" LineHeight="1.4"
+                                       TextColor="{DynamicResource Ink}"
+                                       LineBreakMode="WordWrap"
+                                       Margin="0,0,0,14" />
+                                <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="7">
+                                    <Button Grid.Column="0" Text="1" Style="{StaticResource LikertButton}" CommandParameter="1" Clicked="OnLikertClicked">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=1}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                                <Setter Property="FontFamily" Value="DMSansBold" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Button Grid.Column="1" Text="2" Style="{StaticResource LikertButton}" CommandParameter="2" Clicked="OnLikertClicked">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=2}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                                <Setter Property="FontFamily" Value="DMSansBold" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Button Grid.Column="2" Text="3" Style="{StaticResource LikertButton}" CommandParameter="3" Clicked="OnLikertClicked">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=3}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                                <Setter Property="FontFamily" Value="DMSansBold" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Button Grid.Column="3" Text="4" Style="{StaticResource LikertButton}" CommandParameter="4" Clicked="OnLikertClicked">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=4}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                                <Setter Property="FontFamily" Value="DMSansBold" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                    <Button Grid.Column="4" Text="5" Style="{StaticResource LikertButton}" CommandParameter="5" Clicked="OnLikertClicked">
+                                        <Button.Triggers>
+                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=5}" Value="True">
+                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
+                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                                <Setter Property="FontFamily" Value="DMSansBold" />
+                                            </DataTrigger>
+                                        </Button.Triggers>
+                                    </Button>
+                                </Grid>
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+                <Grid ColumnDefinitions="*,*" Margin="0,12,0,0">
+                    <Label Grid.Column="0" Text="Very inaccurate" FontFamily="DMSans" FontSize="11.5" TextColor="{DynamicResource Muted}" />
+                    <Label Grid.Column="1" Text="Very accurate" FontFamily="DMSans" FontSize="11.5" TextColor="{DynamicResource Muted}" HorizontalTextAlignment="End" />
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="4" x:Name="AdvanceButton"
+                Style="{StaticResource PrimaryButton}"
+                Text="Next three"
+                IsEnabled="{Binding CanAdvance}"
+                Clicked="OnAdvanceClicked"
+                Margin="0,12,0,0" />
+
+    </Grid>
+</ContentPage>

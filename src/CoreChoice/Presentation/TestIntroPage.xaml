@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.TestIntroPage"
+             x:DataType="presentation:TestIntroViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="24,64,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="Who are you when you have to decide?"
+                       FontFamily="LoraMedium"
+                       FontSize="30"
+                       LineHeight="1.26"
+                       CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}"
+                       Margin="0,0,0,14" />
+
+                <Label Text="Fifty statements. Around ten minutes. There are no right answers and nothing is being graded."
+                       FontFamily="DMSans"
+                       FontSize="15"
+                       LineHeight="1.6"
+                       TextColor="{DynamicResource Muted}"
+                       Margin="0,0,0,30" />
+
+                <Border Style="{StaticResource AccentCardBorder}" Padding="18" Margin="0,0,0,26">
+                    <VerticalStackLayout Spacing="12">
+                        <Grid ColumnDefinitions="18,11,*" RowDefinitions="Auto">
+                            <Label Grid.Column="0" Text="&#10003;" FontFamily="DMSansBold" FontSize="13" TextColor="{DynamicResource Accent}" HorizontalTextAlignment="Center" VerticalTextAlignment="Start" />
+                            <Label Grid.Column="2" FontFamily="DMSans" FontSize="14.5" LineHeight="1.5" TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Your full result is free. " FontFamily="DMSansBold" />
+                                        <Span Text="Every trait, every score, permanently. No paywall at the end." />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Grid>
+                        <Grid ColumnDefinitions="18,11,*" RowDefinitions="Auto">
+                            <Label Grid.Column="0" Text="&#10003;" FontFamily="DMSansBold" FontSize="13" TextColor="{DynamicResource Accent}" HorizontalTextAlignment="Center" VerticalTextAlignment="Start" />
+                            <Label Grid.Column="2" FontFamily="DMSans" FontSize="14.5" LineHeight="1.5" TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap">
+                                <Label.FormattedText>
+                                    <FormattedString>
+                                        <Span Text="Finishing adds " />
+                                        <Span Text="five more analyses" FontFamily="DMSansBold" />
+                                        <Span Text=" to your account." />
+                                    </FormattedString>
+                                </Label.FormattedText>
+                            </Label>
+                        </Grid>
+                    </VerticalStackLayout>
+                </Border>
+
+                <VerticalStackLayout Spacing="16">
+                    <Grid ColumnDefinitions="Auto,13,*" RowDefinitions="Auto">
+                        <Label Grid.Column="0" Text="01" FontFamily="Lora" FontSize="15" LineHeight="1.5" TextColor="{DynamicResource Faint}" VerticalOptions="Start" />
+                        <Label Grid.Column="2" Text="You can stop anywhere. It remembers the question you were on."
+                               FontFamily="DMSans" FontSize="14" LineHeight="1.55" TextColor="{DynamicResource Muted}"
+                               LineBreakMode="WordWrap" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,13,*" RowDefinitions="Auto">
+                        <Label Grid.Column="0" Text="02" FontFamily="Lora" FontSize="15" LineHeight="1.5" TextColor="{DynamicResource Faint}" VerticalOptions="Start" />
+                        <Label Grid.Column="2" Text="Your answers stay on this phone. They are never sent anywhere."
+                               FontFamily="DMSans" FontSize="14" LineHeight="1.55" TextColor="{DynamicResource Muted}"
+                               LineBreakMode="WordWrap" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,13,*" RowDefinitions="Auto">
+                        <Label Grid.Column="0" Text="03" FontFamily="Lora" FontSize="15" LineHeight="1.5" TextColor="{DynamicResource Faint}" VerticalOptions="Start" />
+                        <Label Grid.Column="2" Text="Answer quickly. First instinct is more accurate than a considered one."
+                               FontFamily="DMSans" FontSize="14" LineHeight="1.55" TextColor="{DynamicResource Muted}"
+                               LineBreakMode="WordWrap" />
+                    </Grid>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
+            <Button x:Name="StartButton"
+                    Style="{StaticResource PrimaryButton}"
+                    Text="Begin"
+                    Clicked="OnStartClicked"
+                    Margin="0,0,0,12" />
+            <Label Text="Not now — ask a question first"
+                   FontFamily="DMSans"
+                   FontSize="14"
+                   TextColor="{DynamicResource Muted}"
+                   HeightRequest="48"
+                   HorizontalTextAlignment="Center"
+                   VerticalTextAlignment="Center" />
+        </VerticalStackLayout>
+
+    </Grid>
+</ContentPage>

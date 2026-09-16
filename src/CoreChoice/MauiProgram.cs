@@ -1,5 +1,8 @@
 using CoreChoice.Application;
+using CoreChoice.Data;
+using CoreChoice.Presentation;
 using CoreChoice.Services;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -37,6 +40,23 @@ public static class MauiProgram
         });
         builder.Services.AddTransient<IDecisionClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
         builder.Services.AddTransient<ICoinLedgerClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
+
+        // The database path is a MAUI concern (FileSystem.AppDataDirectory), so it is resolved
+        // here, in the composition root, and nowhere else. LocalDbContext and
+        // SqliteProfileRepository stay free of MAUI types so CoreChoice.App.Tests, a plain
+        // net10.0 project, can link them by source.
+        var databasePath = Path.Combine(FileSystem.AppDataDirectory, "corechoice.db");
+        builder.Services.AddDbContextFactory<LocalDbContext>(options =>
+            options.UseSqlite($"Data Source={databasePath}"));
+        builder.Services.AddSingleton<IProfileRepository, SqliteProfileRepository>();
+
+        // The personality-test flow: intro, the 50 items, and the free result.
+        builder.Services.AddTransient<TestIntroViewModel>();
+        builder.Services.AddTransient<TestViewModel>();
+        builder.Services.AddTransient<ProfileViewModel>();
+        builder.Services.AddTransient<TestIntroPage>();
+        builder.Services.AddTransient<TestPage>();
+        builder.Services.AddTransient<ProfilePage>();
 
 #if DEBUG
         builder.Logging.AddDebug();
