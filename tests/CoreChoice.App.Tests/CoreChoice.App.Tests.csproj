@@ -32,5 +32,6 @@
     <Compile Include="..\..\src\CoreChoice\Data\SqliteProfileRepository.cs" Link="Linked\SqliteProfileRepository.cs" />
     <Compile Include="..\..\src\CoreChoice\Services\ApiOptions.cs" Link="Linked\ApiOptions.cs" />
     <Compile Include="..\..\src\CoreChoice\Services\CoreChoiceApiClient.cs" Link="Linked\CoreChoiceApiClient.cs" />
+    <Compile Include="..\..\src\CoreChoice\Services\VerdictLabel.cs" Link="Linked\VerdictLabel.cs" />
   </ItemGroup>
 </Project>
