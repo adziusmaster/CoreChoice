@@ -11,29 +11,21 @@ public sealed record PersonaSummary(string Id, string DisplayName, string Descri
 
 /// <summary>
 /// The MAUI app's only route to the backend. Implements both outbound ports the app needs
-/// (<see cref="IDecisionAdvisor"/> and <see cref="ICoinLedgerClient"/>) because both are the same
+/// (<see cref="IDecisionClient"/> and <see cref="ICoinLedgerClient"/>) because both are the same
 /// HTTP conversation with the same device id, and translates every failure the server can return
 /// into the application exceptions the view models already understand — a screen should never see
 /// a bare <see cref="HttpRequestException"/> or status code.
 /// </summary>
 internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity deviceIdentity, IOptions<ApiOptions> options)
-    : IDecisionAdvisor, ICoinLedgerClient
+    : IDecisionClient, ICoinLedgerClient
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
-
-    /// <summary>
-    /// The balance as last reported by the server, from whichever call last carried one. The
-    /// decision endpoint returns the post-spend balance in the same round trip that already paid
-    /// for the analysis, so callers do not need a second request just to refresh the number.
-    /// </summary>
-    public int Balance { get; private set; }
 
     public async Task<CoinBalance> GetBalanceAsync(CancellationToken ct = default)
     {
         var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
         var response = await SendAsync(HttpMethod.Get, $"api/coins/{deviceId}", body: null, ct);
         var dto = await ReadAsync<BalanceDto>(response, ct);
-        Balance = dto.Balance;
         return new CoinBalance(dto.Balance);
     }
 
@@ -42,7 +34,6 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
         var response = await SendAsync(HttpMethod.Post, "api/coins/ensure", new { deviceId }, ct);
         var dto = await ReadAsync<BalanceDto>(response, ct);
-        Balance = dto.Balance;
         return new CoinBalance(dto.Balance);
     }
 
@@ -51,7 +42,6 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
         var response = await SendAsync(HttpMethod.Post, "api/coins/profile-grant", new { deviceId }, ct);
         var dto = await ReadAsync<GrantDto>(response, ct);
-        Balance = dto.Balance;
         return new GrantResult(dto.Granted, dto.Balance, dto.Reason);
     }
 
@@ -62,7 +52,7 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         return dtos.Select(d => new PersonaSummary(d.Id, d.DisplayName, d.Description)).ToList();
     }
 
-    public async Task<DecisionResult> AnalyseAsync(DecisionRequest request, CancellationToken ct = default)
+    public async Task<AnalysedDecision> AnalyseAsync(DecisionRequest request, CancellationToken ct = default)
     {
         var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
         var profile = request.Profile;
@@ -92,7 +82,6 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
 
         var response = await SendAsync(HttpMethod.Post, "api/decisions", body, ct);
         var dto = await ReadAsync<DecisionResponseDto>(response, ct);
-        Balance = dto.Balance;
 
         var analysis = new DecisionAnalysis(
             dto.Recommendation,
@@ -103,9 +92,7 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
             dto.PersonalityNote,
             dto.Personalized);
 
-        // The decision endpoint never reports token usage to the app — that is server-internal
-        // accounting — so there is nothing honest to put here but the empty value.
-        return new DecisionResult(analysis, TokenUsage.Empty);
+        return new AnalysedDecision(analysis, dto.Balance);
     }
 
     private async Task<HttpResponseMessage> SendAsync(

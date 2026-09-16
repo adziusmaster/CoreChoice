@@ -68,7 +68,7 @@ public class ApiClientTests
         result.Analysis.OptionB.Risks.Should().Equal("Stagnation");
         result.Analysis.PersonalityNote.Should().Be("Your high openness favours the unfamiliar option.");
         result.Analysis.IsPersonalized.Should().BeTrue();
-        client.Balance.Should().Be(4);
+        result.Balance.Should().Be(4);
     }
 
     [Fact]

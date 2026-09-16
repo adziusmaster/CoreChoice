@@ -35,7 +35,7 @@ public static class MauiProgram
             client.BaseAddress = new Uri(options.BaseUrl);
             client.Timeout = TimeSpan.FromSeconds(60);
         });
-        builder.Services.AddTransient<IDecisionAdvisor>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
+        builder.Services.AddTransient<IDecisionClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
         builder.Services.AddTransient<ICoinLedgerClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
 
 #if DEBUG
