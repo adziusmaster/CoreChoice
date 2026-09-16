@@ -2,9 +2,11 @@
   <Folder Name="/src/">
     <Project Path="src/CoreChoice.Core/CoreChoice.Core.csproj" />
     <Project Path="src/CoreChoice.Server/CoreChoice.Server.csproj" />
+    <Project Path="src/CoreChoice/CoreChoice.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/CoreChoice.Core.Tests/CoreChoice.Core.Tests.csproj" />
     <Project Path="tests/CoreChoice.Server.Tests/CoreChoice.Server.Tests.csproj" />
+    <Project Path="tests/CoreChoice.App.Tests/CoreChoice.App.Tests.csproj" />
   </Folder>
 </Solution>
