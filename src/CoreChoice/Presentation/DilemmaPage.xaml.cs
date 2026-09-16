@@ -54,11 +54,14 @@ public partial class DilemmaPage : ContentPage, IQueryAttributable
             return;
         }
 
-        // The analysis/result screen ("getting an answer") is a separate feature, out of this
-        // task's scope and not yet wired into the shell. Building the request here exercises the
-        // full path this screen owns; returning to the free result is the safest known-good
-        // destination until that screen exists, mirroring ProfilePage.OnAskClicked's placeholder.
-        _ = await _viewModel.BuildRequestAsync();
-        await Shell.Current.GoToAsync("//TestIntroPage");
+        var request = await _viewModel.BuildRequestAsync();
+        if (request is null)
+            return;
+
+        await Shell.Current.GoToAsync(nameof(AnalysisPage), new Dictionary<string, object>
+        {
+            ["Request"] = request,
+            ["PersonaDisplayName"] = _viewModel.FooterDisplayName,
+        });
     }
 }

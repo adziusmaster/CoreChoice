@@ -50,5 +50,8 @@
     <!-- Task 8 fix round: the local, offline fallback table for the suggested persona's display
          name, MAUI-free so it can be linked and tested like PresentationMath.cs. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\PersonaDisplayNames.cs" Link="Linked\PersonaDisplayNames.cs" />
+    <!-- Task 9: the waiting screen and the answer itself. Both MAUI-free by design. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\WaitingLineComposer.cs" Link="Linked\WaitingLineComposer.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\AnalysisViewModel.cs" Link="Linked\AnalysisViewModel.cs" />
   </ItemGroup>
 </Project>

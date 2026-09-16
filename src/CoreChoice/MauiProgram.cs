@@ -70,6 +70,10 @@ public static class MauiProgram
         builder.Services.AddTransient<DilemmaPage>();
         builder.Services.AddTransient<PersonaPage>();
 
+        // The payoff: the waiting screen and the answer itself.
+        builder.Services.AddTransient<AnalysisViewModel>();
+        builder.Services.AddTransient<AnalysisPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
