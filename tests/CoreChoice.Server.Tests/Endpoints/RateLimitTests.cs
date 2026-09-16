@@ -61,5 +61,31 @@ public class RateLimitTests
         balance!.Balance.Should().Be(0, "five coins bought five analyses; the rest were refused");
     }
 
+    [Fact]
+    public async Task Personas_DifferentForwardedOrigins_ShouldGetIndependentBudgets()
+    {
+        // Arrange — without UseForwardedHeaders, every request's RemoteIpAddress stays whatever the
+        // TestServer gives it regardless of X-Forwarded-For, so two different forwarded origins would
+        // collapse onto the same rate-limit partition. This proves they don't.
+        var client = new CoreChoiceAppFactory(Substitute.For<IGeminiClient>()).CreateClient();
+
+        // Act — exhaust the 60/minute budget for one forwarded origin.
+        HttpResponseMessage? lastA = null;
+        for (var i = 0; i < 61; i++)
+        {
+            client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+            client.DefaultRequestHeaders.Add("X-Forwarded-For", "203.0.113.5");
+            lastA = await client.GetAsync("/api/personas");
+        }
+
+        client.DefaultRequestHeaders.Remove("X-Forwarded-For");
+        client.DefaultRequestHeaders.Add("X-Forwarded-For", "198.51.100.9");
+        var responseB = await client.GetAsync("/api/personas");
+
+        // Assert — origin A is exhausted, but a different forwarded origin gets its own budget.
+        lastA!.StatusCode.Should().Be(HttpStatusCode.TooManyRequests);
+        responseB.StatusCode.Should().Be(HttpStatusCode.OK);
+    }
+
     private sealed record BalanceDto(Guid DeviceId, int Balance);
 }

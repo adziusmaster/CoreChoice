@@ -109,5 +109,34 @@ public class DevEndpointTests
         response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
     }
 
+    [Fact]
+    public async Task Get_WhenTheSecretIsUnset_ShouldReturnNotFoundNotMethodNotAllowed()
+    {
+        // Arrange — the route must not exist at all when unconfigured, not merely reject the verb:
+        // a 405 would confirm the route's existence to a prober.
+        var client = BuildWithSecret(secret: null);
+
+        // Act
+        var response = await client.GetAsync("/api/dev/grant");
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
+    [Fact]
+    public async Task Post_WithAMalformedBody_WhenTheSecretIsUnset_ShouldReturnNotFoundNotBadRequest()
+    {
+        // Arrange — a malformed body must not confirm the route's existence via a 400 either:
+        // argument binding runs before the endpoint filter, so the route itself must be absent.
+        var client = BuildWithSecret(secret: null);
+        var content = new StringContent("{ not json", System.Text.Encoding.UTF8, "application/json");
+
+        // Act
+        var response = await client.PostAsync("/api/dev/grant", content);
+
+        // Assert
+        response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+    }
+
     private sealed record BalanceDto(Guid DeviceId, int Balance);
 }

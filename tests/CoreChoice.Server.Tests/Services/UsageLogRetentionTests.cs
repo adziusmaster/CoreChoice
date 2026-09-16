@@ -49,4 +49,36 @@ public class UsageLogRetentionTests
         // Assert
         deleted.Should().Be(0);
     }
+
+    [Fact]
+    public async Task SweepAsync_ShouldIssueExactlyOneDeleteStatement()
+    {
+        // Arrange — pins the SQL *shape*, not just the row count: a client-side sweep that loads the
+        // whole table and deletes row-by-row still returns correct counts, so a count-only assertion
+        // cannot catch it losing its SQL translation. This interceptor can.
+        var interceptor = new CommandRecordingInterceptor();
+        var factory = InMemoryDb.Create(interceptor);
+        await SchemaInitializer.InitializeAsync(factory);
+
+        await using (var db = await factory.CreateDbContextAsync())
+        {
+            db.UsageLogs.Add(new UsageLog
+            {
+                DeviceHash = "h", PersonaId = "pure-logic",
+                At = DateTimeOffset.UtcNow.AddDays(-120), Success = true,
+            });
+            await db.SaveChangesAsync();
+        }
+        interceptor.Clear();
+
+        // Act
+        var deleted = await UsageLogRetention.SweepAsync(factory, TimeSpan.FromDays(90), DateTimeOffset.UtcNow);
+
+        // Assert — exactly one command, a DELETE filtered on At, no unfiltered SELECT of the table.
+        deleted.Should().Be(1);
+        interceptor.Commands.Should().ContainSingle();
+        var command = interceptor.Commands.Single();
+        command.Should().Contain("DELETE");
+        command.Should().Contain("At");
+    }
 }
