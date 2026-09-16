@@ -40,6 +40,18 @@ dotnet workload list   # must show: maui-android
    with `-p:UseDefaultPublishRuntimeIdentifier=false` — passed below on every build so
    Debug and Release behave the same.
 
+## Running the tests
+
+There is no solution file, so `dotnet test` from the repo root tries to build the MAUI project too
+and fails with `NETSDK1147` on the global SDK. Run each test project by path instead — they are all
+`net10.0` and need no workload:
+
+```sh
+dotnet test tests/CoreChoice.Core.Tests/CoreChoice.Core.Tests.csproj
+dotnet test tests/CoreChoice.Server.Tests/CoreChoice.Server.Tests.csproj
+dotnet test tests/CoreChoice.App.Tests/CoreChoice.App.Tests.csproj
+```
+
 ## Debug build (compile check) — verified
 
 ```sh
