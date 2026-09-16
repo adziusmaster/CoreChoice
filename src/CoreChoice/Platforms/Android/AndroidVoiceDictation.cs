@@ -66,7 +66,18 @@ public sealed class AndroidVoiceDictation : Java.Lang.Object, IVoiceDictation
     private static Task<string?> ListenOnMainThreadAsync(CancellationToken ct)
     {
         var completion = new TaskCompletionSource<string?>();
-        ct.Register(() => completion.TrySetResult(null));
+        var session = new RecognizerSession();
+
+        // One exit for every outcome — recognised, errored, or cancelled — so the recogniser is
+        // torn down exactly once no matter which happens first.
+        void Complete(string? result)
+        {
+            completion.TrySetResult(result);
+            session.Close();
+        }
+
+        var registration = ct.Register(() => Complete(null));
+        completion.Task.ContinueWith(_ => registration.Dispose(), TaskScheduler.Default);
 
         MainThread.BeginInvokeOnMainThread(() =>
         {
@@ -76,16 +87,22 @@ public sealed class AndroidVoiceDictation : Java.Lang.Object, IVoiceDictation
                 recognizer = SpeechRecognizer.CreateSpeechRecognizer(Context);
                 if (recognizer is null)
                 {
-                    completion.TrySetResult(null);
+                    Complete(null);
                     return;
                 }
 
-                var listener = new OneShotListener(result =>
+                // Cancellation can arrive before this block runs — the person navigates away in
+                // the instant between tapping and the main thread getting here. Handing the
+                // recogniser to the session is therefore a handover that can be REFUSED: if the
+                // session has already closed, this instance is destroyed now and never started,
+                // instead of listening on with nothing left holding a reference to it.
+                if (!session.TryAdopt(recognizer))
                 {
-                    completion.TrySetResult(result);
-                    recognizer?.Destroy();
-                });
-                recognizer.SetRecognitionListener(listener);
+                    RecognizerSession.Release(recognizer);
+                    return;
+                }
+
+                recognizer.SetRecognitionListener(new OneShotListener(Complete));
 
                 var intent = new Intent(RecognizerIntent.ActionRecognizeSpeech);
                 intent.PutExtra(RecognizerIntent.ExtraLanguageModel, RecognizerIntent.LanguageModelFreeForm);
@@ -95,12 +112,66 @@ public sealed class AndroidVoiceDictation : Java.Lang.Object, IVoiceDictation
             }
             catch (Exception)
             {
-                recognizer?.Destroy();
-                completion.TrySetResult(null);
+                if (recognizer is not null)
+                    RecognizerSession.Release(recognizer);
+                Complete(null);
             }
         });
 
         return completion.Task;
+    }
+
+    /// <summary>
+    /// Owns the one <see cref="SpeechRecognizer"/> of a listening attempt and guarantees it is
+    /// released exactly once. Without this, cancelling mid-dictation resolved the waiting task but
+    /// left the recogniser running: the microphone stayed open, and on Android the recording
+    /// indicator stays lit with it. The recogniser is created inside a main-thread callback, so
+    /// nothing outside that closure could reach it to shut it down.
+    /// </summary>
+    private sealed class RecognizerSession
+    {
+        private readonly Lock _gate = new();
+        private SpeechRecognizer? _recognizer;
+        private bool _closed;
+
+        /// <summary>Takes ownership, unless the session has already closed — in which case the
+        /// caller must release the instance itself, because nothing else ever will.</summary>
+        public bool TryAdopt(SpeechRecognizer recognizer)
+        {
+            lock (_gate)
+            {
+                if (_closed) return false;
+                _recognizer = recognizer;
+                return true;
+            }
+        }
+
+        public void Close()
+        {
+            SpeechRecognizer? toRelease;
+            lock (_gate)
+            {
+                if (_closed) return;
+                _closed = true;
+                toRelease = _recognizer;
+                _recognizer = null;
+            }
+
+            if (toRelease is null) return;
+
+            // SpeechRecognizer is main-thread only; calling Destroy from the cancellation callback's
+            // thread is itself a crash.
+            MainThread.BeginInvokeOnMainThread(() => Release(toRelease));
+        }
+
+        /// <summary>Stops and destroys a recogniser, swallowing everything. This runs on teardown
+        /// paths — including cancellation — where a throw would replace a clean exit with a crash.</summary>
+        public static void Release(SpeechRecognizer recognizer)
+        {
+            try { recognizer.Cancel(); } catch (Exception) { }
+            try { recognizer.Destroy(); } catch (Exception) { }
+            try { recognizer.Dispose(); } catch (Exception) { }
+        }
     }
 
     /// <summary>A <see cref="IRecognitionListener"/> that reports exactly one outcome — the best
