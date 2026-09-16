@@ -2,7 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
-             xmlns:services="clr-namespace:CoreChoice.Services"
+             xmlns:application="clr-namespace:CoreChoice.Application;assembly=CoreChoice.Core"
              x:Class="CoreChoice.Presentation.PersonaPage"
              x:DataType="presentation:PersonaViewModel"
              Style="{StaticResource PageStyle}"
@@ -52,7 +52,7 @@
 
                 <VerticalStackLayout Spacing="0" BindableLayout.ItemsSource="{Binding Others}">
                     <BindableLayout.ItemTemplate>
-                        <DataTemplate x:DataType="services:PersonaSummary">
+                        <DataTemplate x:DataType="application:PersonaSummary">
                             <VerticalStackLayout Spacing="0">
                                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="13"
                                       MinimumHeightRequest="44" Padding="0,11">

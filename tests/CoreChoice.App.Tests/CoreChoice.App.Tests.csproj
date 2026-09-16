@@ -44,8 +44,11 @@
          PresentationConverters.cs itself implements IValueConverter and uses Rect, so it cannot be. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\PresentationMath.cs" Link="Linked\PresentationMath.cs" />
     <!-- Task 8: asking a question. Both view models are MAUI-free by design; IPersonaCatalog and
-         PersonaSummary come along for free with CoreChoiceApiClient.cs, already linked above. -->
+         PersonaSummary now live in CoreChoice.Core (CS-HEX-02) and come via the project reference. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\DilemmaViewModel.cs" Link="Linked\DilemmaViewModel.cs" />
     <Compile Include="..\..\src\CoreChoice\Presentation\PersonaViewModel.cs" Link="Linked\PersonaViewModel.cs" />
+    <!-- Task 8 fix round: the local, offline fallback table for the suggested persona's display
+         name, MAUI-free so it can be linked and tested like PresentationMath.cs. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\PersonaDisplayNames.cs" Link="Linked\PersonaDisplayNames.cs" />
   </ItemGroup>
 </Project>

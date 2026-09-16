@@ -1,9 +1,9 @@
 using CoreChoice.Application;
 using CoreChoice.Domain;
 using CoreChoice.Presentation;
-using CoreChoice.Services;
 using FluentAssertions;
 using NSubstitute;
+using NSubstitute.ExceptionExtensions;
 
 namespace CoreChoice.App.Tests.Presentation;
 
@@ -22,9 +22,25 @@ public class DilemmaViewModelTests
         return dictation;
     }
 
+    /// <summary>Throws on every call — the default catalog for these tests, since the important
+    /// case for the footer is that it names the suggested advisor with no network at all.</summary>
+    private static IPersonaCatalog OfflineCatalog()
+    {
+        var catalog = Substitute.For<IPersonaCatalog>();
+        catalog.GetPersonasAsync(Arg.Any<CancellationToken>()).ThrowsForAnyArgs(new HttpRequestException("offline"));
+        return catalog;
+    }
+
+    private static IPersonaCatalog StubCatalog(IReadOnlyList<PersonaSummary> personas)
+    {
+        var catalog = Substitute.For<IPersonaCatalog>();
+        catalog.GetPersonasAsync(Arg.Any<CancellationToken>()).Returns(personas);
+        return catalog;
+    }
+
     private static DilemmaViewModel BuildVm(
-        IProfileRepository? repository = null, IVoiceDictation? dictation = null) =>
-        new(repository ?? new FakeProfileRepository(), dictation ?? AvailableDictation());
+        IProfileRepository? repository = null, IVoiceDictation? dictation = null, IPersonaCatalog? personaCatalog = null) =>
+        new(repository ?? new FakeProfileRepository(), dictation ?? AvailableDictation(), personaCatalog ?? OfflineCatalog());
 
     // ===== CanSubmit =====
 
@@ -335,5 +351,114 @@ public class DilemmaViewModelTests
 
         // Assert
         vm.WeightLabel.Should().Be(expected);
+    }
+
+    // ===== FooterDisplayName / SuggestedDisplayName — the footer must name the suggested advisor,
+    // not ask "choose who answers": a suggestion that has to be sought before it is seen is not a
+    // suggestion, it hands the choice straight back to someone who came here to avoid one. =====
+
+    [Fact]
+    public void FooterDisplayName_OnConstructionWithNoNetworkAndNoPersonaChosen_ShouldNameTheSuggestedAdvisor()
+    {
+        // Arrange — no InitializeAsync call at all: this must already be correct the instant the
+        // view model exists, before storage or the network have had any chance to answer.
+        var vm = BuildVm();
+
+        // Act
+        vm.Weight = 5;
+
+        // Assert — matches the approved design (design/Dilemma.dc.html): weight "a great deal"
+        // suggests the-long-view.
+        vm.FooterDisplayName.Should().Be("The Long View");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WithNoCatalogAvailable_ShouldStillNameTheSuggestedAdvisor()
+    {
+        // Arrange — the offline case: the catalog throws, exactly as it would with no signal.
+        var vm = BuildVm(personaCatalog: OfflineCatalog());
+        vm.Weight = 5;
+
+        // Act
+        await vm.InitializeAsync();
+
+        // Assert — the local fallback table named it; the catalog failure never blanked it out.
+        vm.FooterDisplayName.Should().Be("The Long View");
+    }
+
+    [Theory]
+    [InlineData("devils-advocate", "Devil's Advocate")]
+    [InlineData("warm-support", "Warm Support")]
+    [InlineData("pure-logic", "Pure Logic")]
+    [InlineData("the-pragmatist", "The Pragmatist")]
+    [InlineData("the-long-view", "The Long View")]
+    [InlineData("gut-check", "Gut Check")]
+    public void PersonaDisplayNames_DisplayName_ForEachOfTheSixKnownIds_ShouldReturnItsDocumentedName(
+        string id, string expectedName)
+    {
+        // Act
+        var name = PersonaDisplayNames.DisplayName(id);
+
+        // Assert — exact match is stronger than merely non-empty, but non-empty is the invariant
+        // that matters: a future id added to PersonaSuggestion but forgotten here must never leave
+        // the footer blank.
+        name.Should().Be(expectedName);
+        name.Should().NotBeNullOrWhiteSpace();
+    }
+
+    [Fact]
+    public void FooterDisplayName_WhenTheWeightSliderChanges_ShouldFollowTheNewSuggestion()
+    {
+        // Arrange
+        var vm = BuildVm();
+
+        // Act & Assert — the suggestion rule cross-references the weight directly, so the footer
+        // must track it live as the slider moves, not just at load time.
+        vm.Weight = 4;
+        vm.FooterDisplayName.Should().Be("Pure Logic");
+
+        vm.Weight = 1;
+        vm.FooterDisplayName.Should().Be("Gut Check");
+
+        vm.Weight = 5;
+        vm.FooterDisplayName.Should().Be("The Long View");
+    }
+
+    [Fact]
+    public async Task FooterDisplayName_WhenAPersonaWasExplicitlyChosen_ShouldNotBeOverwrittenByALaterSuggestionRecompute()
+    {
+        // Arrange — the person picked a persona on PersonaPage; SamplePersona ("the-pragmatist")
+        // differs from whatever weight 5 would suggest ("the-long-view"), so an overwrite is
+        // detectable.
+        var vm = BuildVm();
+        vm.Persona = SamplePersona;
+
+        // Act — both a weight change and a full re-initialize (fresh catalog fetch) happen after
+        // the explicit choice.
+        vm.Weight = 5;
+        await vm.InitializeAsync();
+
+        // Assert
+        vm.FooterDisplayName.Should().Be(SamplePersona.DisplayName);
+        vm.FooterDisplayName.Should().NotBe("The Long View");
+    }
+
+    [Fact]
+    public async Task InitializeAsync_WhenTheCatalogAnswers_ShouldPreferTheCatalogsNameOverTheLocalTable()
+    {
+        // Arrange — the catalog's own spelling deliberately differs from PersonaDisplayNames' so a
+        // pass here proves the catalog wins rather than the local table racing it or being final.
+        var catalogPersonas = new[]
+        {
+            new PersonaSummary("the-long-view", "The Long View (from catalog)", "..."),
+        };
+        var vm = BuildVm(personaCatalog: StubCatalog(catalogPersonas));
+        vm.Weight = 5;
+
+        // Act
+        await vm.InitializeAsync();
+
+        // Assert
+        vm.FooterDisplayName.Should().Be("The Long View (from catalog)");
     }
 }

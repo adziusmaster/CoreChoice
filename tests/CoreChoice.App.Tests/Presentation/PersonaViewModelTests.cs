@@ -1,7 +1,6 @@
 using CoreChoice.Application;
 using CoreChoice.Domain;
 using CoreChoice.Presentation;
-using CoreChoice.Services;
 using FluentAssertions;
 using NSubstitute;
 using NSubstitute.ExceptionExtensions;

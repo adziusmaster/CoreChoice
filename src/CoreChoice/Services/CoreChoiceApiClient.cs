@@ -6,23 +6,6 @@ using Microsoft.Extensions.Options;
 
 namespace CoreChoice.Services;
 
-/// <summary>The picker's contents: names and descriptions only, never the prompt template.</summary>
-public sealed record PersonaSummary(string Id, string DisplayName, string Description);
-
-/// <summary>
-/// Outbound port for the persona picker. A separate interface from <see cref="IDecisionClient"/>
-/// and <see cref="ICoinLedgerClient"/> — declared here, next to <see cref="PersonaSummary"/>,
-/// rather than in <c>CoreChoice.Core</c>, because that DTO is a view-facing shape ("never the
-/// prompt template") with no reason to be visible to the domain. It exists so
-/// <see cref="Presentation.PersonaViewModel"/>, a public type bound from XAML, can depend on
-/// something other than the <c>internal</c> <see cref="CoreChoiceApiClient"/> itself — a public
-/// member cannot take a less-accessible type in its signature.
-/// </summary>
-public interface IPersonaCatalog
-{
-    Task<IReadOnlyList<PersonaSummary>> GetPersonasAsync(CancellationToken ct = default);
-}
-
 /// <summary>
 /// The MAUI app's only route to the backend. Implements the outbound ports the app needs
 /// (<see cref="IDecisionClient"/>, <see cref="ICoinLedgerClient"/>, <see cref="IPersonaCatalog"/>)

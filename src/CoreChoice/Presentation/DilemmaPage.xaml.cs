@@ -2,10 +2,12 @@ namespace CoreChoice.Presentation;
 
 /// <summary>
 /// "What are you weighing?" — the two options, optional context, and how much rides on it. The
-/// persona is chosen on a separate screen (<see cref="PersonaPage"/>) reached from the footer;
-/// this page never fetches the persona catalog itself, so it never depends on the network to
-/// render at all — only <see cref="DilemmaViewModel.BuildRequestAsync"/>, called once a persona
-/// is already in hand, touches storage, and nothing here calls the backend.
+/// persona is chosen on a separate screen (<see cref="PersonaPage"/>) reached from the footer, but
+/// this page's own footer already names a suggested advisor before that screen is ever visited:
+/// <see cref="DilemmaViewModel.SuggestedDisplayName"/> is correct offline from construction, and
+/// <see cref="DilemmaViewModel.InitializeAsync"/> — called below, from <see cref="OnAppearing"/> —
+/// only ever refines it further. A dead network leaves the footer exactly as good as it was, never
+/// worse, so this page still renders correctly with no signal.
 /// </summary>
 public partial class DilemmaPage : ContentPage, IQueryAttributable
 {
@@ -18,11 +20,17 @@ public partial class DilemmaPage : ContentPage, IQueryAttributable
         BindingContext = viewModel;
     }
 
+    protected override async void OnAppearing()
+    {
+        base.OnAppearing();
+        await _viewModel.InitializeAsync();
+    }
+
     /// <summary>Receives the persona chosen on <see cref="PersonaPage"/>, passed back through the
     /// Shell navigation parameters on its way to "..".</summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
-        if (query.TryGetValue("SelectedPersona", out var value) && value is Services.PersonaSummary persona)
+        if (query.TryGetValue("SelectedPersona", out var value) && value is Application.PersonaSummary persona)
             _viewModel.Persona = persona;
     }
 

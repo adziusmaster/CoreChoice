@@ -107,21 +107,17 @@
                 <Grid.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnChoosePersonaTapped" />
                 </Grid.GestureRecognizers>
-                <Label Grid.Column="0" IsVisible="{Binding HasPersona}"
+                <Label Grid.Column="0"
                        FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
                        VerticalTextAlignment="Center">
                     <Label.FormattedText>
                         <FormattedString>
                             <Span Text="Answering as " />
-                            <Span Text="{Binding Persona.DisplayName}" TextColor="{DynamicResource Ink}" FontFamily="DMSansMedium" />
+                            <Span Text="{Binding FooterDisplayName}" TextColor="{DynamicResource Ink}" FontFamily="DMSansMedium" />
                         </FormattedString>
                     </Label.FormattedText>
                 </Label>
-                <Label Grid.Column="0" IsVisible="{Binding NoPersona}"
-                       Text="Choose who answers"
-                       FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
-                       VerticalTextAlignment="Center" />
-                <Label Grid.Column="1" Text="Change" IsVisible="{Binding HasPersona}"
+                <Label Grid.Column="1" Text="Change"
                        FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Accent}"
                        VerticalTextAlignment="Center" />
             </Grid>

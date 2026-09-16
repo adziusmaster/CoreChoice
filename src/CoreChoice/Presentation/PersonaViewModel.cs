@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CoreChoice.Application;
 using CoreChoice.Domain;
-using CoreChoice.Services;
 
 namespace CoreChoice.Presentation;
 

@@ -1,7 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CoreChoice.Application;
 using CoreChoice.Domain;
-using CoreChoice.Services;
 
 namespace CoreChoice.Presentation;
 
@@ -26,7 +25,8 @@ public enum DilemmaField
 /// the moment a person went one letter past the limit. <see cref="CanSubmit"/> is the guard that
 /// keeps that constructor call from ever running against invalid input.
 /// </summary>
-public sealed partial class DilemmaViewModel(IProfileRepository repository, IVoiceDictation dictation)
+public sealed partial class DilemmaViewModel(
+    IProfileRepository repository, IVoiceDictation dictation, IPersonaCatalog personaCatalog)
     : ObservableObject
 {
     [ObservableProperty]
@@ -46,21 +46,45 @@ public sealed partial class DilemmaViewModel(IProfileRepository repository, IVoi
     private int weight = 3;
 
     [ObservableProperty]
-    [NotifyPropertyChangedFor(nameof(HasPersona))]
-    [NotifyPropertyChangedFor(nameof(NoPersona))]
+    [NotifyPropertyChangedFor(nameof(FooterDisplayName))]
     private PersonaSummary? persona;
+
+    /// <summary>
+    /// The suggested persona's display name, resolved offline from <see cref="PersonaDisplayNames"/>
+    /// against <see cref="PersonaSuggestion.PersonaId"/> so it is correct from the moment this view
+    /// model is constructed — before <see cref="InitializeAsync"/> has loaded the real profile or
+    /// reached the catalog, and using the default weight and <see cref="OceanProfile.None"/> in the
+    /// same way the fields below default. <see cref="InitializeAsync"/> refines this once the real
+    /// profile is known and again once the catalog answers; a weight change refines it via
+    /// <c>OnWeightChanged</c>. Never shown directly — see <see cref="FooterDisplayName"/>.
+    /// </summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(FooterDisplayName))]
+    private string suggestedDisplayName = PersonaDisplayNames.DisplayName(PersonaSuggestion.PersonaId(3, OceanProfile.None));
+
+    /// <summary>The stored profile, cached after <see cref="InitializeAsync"/> loads it once, so a
+    /// weight change can recompute the suggestion without hitting storage again.</summary>
+    private OceanProfile _profile = OceanProfile.None;
+
+    /// <summary>Display names from the catalog, once it has answered. Null until then, so
+    /// <see cref="RefreshSuggestedDisplayName"/> knows to fall back to <see cref="PersonaDisplayNames"/>.</summary>
+    private IReadOnlyDictionary<string, string>? _catalogDisplayNames;
 
     /// <summary>Whether the mic control should even be shown. Backed by the port so an
     /// unavailable or permission-refused recogniser hides the button rather than the screen
     /// offering a control that will silently do nothing.</summary>
     public bool IsDictationAvailable => dictation.IsAvailable;
 
-    /// <summary>True once a persona has been chosen on the picker screen.</summary>
-    public bool HasPersona => Persona is not null;
-
-    /// <summary>The inverse of <see cref="HasPersona"/>, exposed separately rather than negated
-    /// in XAML with a converter — one fewer MAUI-typed file to keep in sync.</summary>
-    public bool NoPersona => Persona is null;
+    /// <summary>
+    /// What the footer names as the answerer: the explicitly chosen persona once there is one,
+    /// otherwise the locally-computed suggestion. The design calls for a pre-made, visible,
+    /// changeable suggestion rather than an empty "choose who answers" prompt — a suggestion that
+    /// has to be sought before it is seen is not a suggestion, it hands the decision straight back
+    /// to someone who came here because choices exhaust them. An explicit choice always wins here
+    /// and is never replaced by a later suggestion recompute, because <see cref="Persona"/> is
+    /// only ever set by the person tapping a persona on the picker screen.
+    /// </summary>
+    public string FooterDisplayName => Persona?.DisplayName ?? SuggestedDisplayName;
 
     /// <summary>Short, plain-language stand-in for the numeric weight, shown next to the slider.
     /// Deliberately not <see cref="DecisionWeight.Description"/> — that full sentence is written
@@ -123,6 +147,45 @@ public sealed partial class DilemmaViewModel(IProfileRepository repository, IVoi
                 Context = heard;
                 break;
         }
+    }
+
+    /// <summary>Recomputes <see cref="SuggestedDisplayName"/> whenever the slider moves — the
+    /// suggestion rule cross-references the weight directly, so the footer must follow it.</summary>
+    partial void OnWeightChanged(int value) => RefreshSuggestedDisplayName();
+
+    /// <summary>
+    /// Loads the stored profile and resolves the suggested persona's name against it, then makes a
+    /// best-effort attempt to refresh that name from the catalog. Called once, from the page's
+    /// <c>OnAppearing</c>. The first step never touches the network — local storage only — so the
+    /// footer is already correct by the time this returns even if the second step fails; a catalog
+    /// failure here is silent for the same reason <see cref="PersonaViewModel.LoadAsync"/>'s is:
+    /// this screen must render with no signal, and the local table already named the suggestion.
+    /// </summary>
+    public async Task InitializeAsync(CancellationToken ct = default)
+    {
+        _profile = await repository.LoadProfileAsync(ct);
+        RefreshSuggestedDisplayName();
+
+        try
+        {
+            var personas = await personaCatalog.GetPersonasAsync(ct);
+            _catalogDisplayNames = personas.ToDictionary(p => p.Id, p => p.DisplayName);
+            RefreshSuggestedDisplayName();
+        }
+        catch (Exception) when (!ct.IsCancellationRequested)
+        {
+            // No network, or the server is unreachable — SuggestedDisplayName already carries the
+            // local table's name from the step above, so the footer still names someone.
+        }
+    }
+
+    private void RefreshSuggestedDisplayName()
+    {
+        var suggestedId = PersonaSuggestion.PersonaId(Weight, _profile);
+        SuggestedDisplayName = _catalogDisplayNames is not null
+            && _catalogDisplayNames.TryGetValue(suggestedId, out var catalogName)
+                ? catalogName
+                : PersonaDisplayNames.DisplayName(suggestedId);
     }
 
     /// <summary>
