@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:services="clr-namespace:CoreChoice.Services"
+             x:Class="CoreChoice.Presentation.PersonaPage"
+             x:DataType="presentation:PersonaViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="24,52,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="Who should answer this?"
+                       FontFamily="LoraMedium" FontSize="27" LineHeight="1.28" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,8" />
+
+                <Label Text="Chosen for you from what you told us. Change it if it does not fit."
+                       FontFamily="DMSans" FontSize="14" LineHeight="1.55"
+                       TextColor="{DynamicResource Muted}" Margin="0,0,0,18" />
+
+                <Border Style="{StaticResource AccentCardBorder}" Padding="18" Margin="0,0,0,20"
+                        IsVisible="{Binding HasSuggestion}">
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="Auto,9,*">
+                            <BoxView Grid.Column="0" Color="{DynamicResource Accent}" CornerRadius="3" WidthRequest="6" HeightRequest="6" VerticalOptions="Center" />
+                            <Label Grid.Column="2" Text="SUGGESTED" Style="{StaticResource MicroLabel}"
+                                   TextColor="{DynamicResource Accent}" FontSize="11.5" VerticalOptions="Center" />
+                        </Grid>
+                        <Label Text="{Binding Suggested.DisplayName}"
+                               FontFamily="Lora" FontSize="23" LineHeight="1.3" TextColor="{DynamicResource Ink}" />
+                        <Label Text="{Binding Suggested.Description}"
+                               FontFamily="DMSans" FontSize="14.5" LineHeight="1.55"
+                               TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+                        <Label FontFamily="Lora" FontAttributes="Italic" FontSize="13" LineHeight="1.5"
+                               TextColor="{DynamicResource AccentDim}" LineBreakMode="WordWrap">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Suggested: " />
+                                    <Span Text="{Binding SuggestionReason}" />
+                                </FormattedString>
+                            </Label.FormattedText>
+                        </Label>
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="OTHER VOICES" Style="{StaticResource MicroLabel}"
+                       TextColor="{DynamicResource Faint}" FontSize="12" Margin="0,0,0,4"
+                       IsVisible="{Binding HasOthers}" />
+
+                <VerticalStackLayout Spacing="0" BindableLayout.ItemsSource="{Binding Others}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="services:PersonaSummary">
+                            <VerticalStackLayout Spacing="0">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="13"
+                                      MinimumHeightRequest="44" Padding="0,11">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnOtherPersonaTapped" />
+                                    </Grid.GestureRecognizers>
+                                    <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                        <Label Text="{Binding DisplayName}" FontFamily="DMSans" FontSize="15" TextColor="{DynamicResource Ink}" />
+                                        <Label Text="{Binding Description}" FontFamily="DMSans" FontSize="12.5" LineHeight="1.4"
+                                               TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="&#8250;" FontFamily="DMSans" FontSize="18"
+                                           TextColor="{DynamicResource Faint}" VerticalOptions="Center" />
+                                </Grid>
+                                <BoxView Color="{DynamicResource LineSoft}" HeightRequest="1" HorizontalOptions="Fill" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Button Grid.Row="1" Style="{StaticResource PrimaryButton}" Margin="0,12,0,0"
+                IsVisible="{Binding HasSuggestion}"
+                Text="{Binding Suggested.DisplayName, StringFormat='Ask {0}'}"
+                Clicked="OnAskSuggestedClicked" />
+
+    </Grid>
+</ContentPage>

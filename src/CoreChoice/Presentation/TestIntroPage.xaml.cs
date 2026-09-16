@@ -38,4 +38,7 @@ public partial class TestIntroPage : ContentPage
 
         await Shell.Current.GoToAsync(goToProfile ? nameof(ProfilePage) : nameof(TestPage));
     }
+
+    private async void OnAskAQuestionTapped(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(DilemmaPage));
 }

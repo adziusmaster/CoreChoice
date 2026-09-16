@@ -43,5 +43,9 @@
     <!-- Task 7d: the converters' maths, extracted so it is MAUI-free and therefore linkable —
          PresentationConverters.cs itself implements IValueConverter and uses Rect, so it cannot be. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\PresentationMath.cs" Link="Linked\PresentationMath.cs" />
+    <!-- Task 8: asking a question. Both view models are MAUI-free by design; IPersonaCatalog and
+         PersonaSummary come along for free with CoreChoiceApiClient.cs, already linked above. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\DilemmaViewModel.cs" Link="Linked\DilemmaViewModel.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\PersonaViewModel.cs" Link="Linked\PersonaViewModel.cs" />
   </ItemGroup>
 </Project>

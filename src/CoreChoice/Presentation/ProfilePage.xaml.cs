@@ -23,11 +23,6 @@ public partial class ProfilePage : ContentPage
         await _viewModel.LoadAsync();
     }
 
-    private async void OnAskClicked(object? sender, EventArgs e)
-    {
-        // The decision flow ("ask a question") is a separate feature, out of this task's scope
-        // and not yet wired into the shell. Returning to the root is the safest known-good
-        // destination until that page exists.
-        await Shell.Current.GoToAsync("//TestIntroPage");
-    }
+    private async void OnAskClicked(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(DilemmaPage));
 }

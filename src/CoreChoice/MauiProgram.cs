@@ -1,5 +1,6 @@
 using CoreChoice.Application;
 using CoreChoice.Data;
+using CoreChoice.Platforms.Android;
 using CoreChoice.Presentation;
 using CoreChoice.Services;
 using Microsoft.EntityFrameworkCore;
@@ -40,6 +41,11 @@ public static class MauiProgram
         });
         builder.Services.AddTransient<IDecisionClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
         builder.Services.AddTransient<ICoinLedgerClient>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
+        builder.Services.AddTransient<IPersonaCatalog>(sp => sp.GetRequiredService<CoreChoiceApiClient>());
+
+        // Voice dictation for the dilemma fields. The permission prompt happens inside
+        // AndroidVoiceDictation.ListenAsync, at the moment the mic is tapped — never here.
+        builder.Services.AddTransient<IVoiceDictation, AndroidVoiceDictation>();
 
         // The database path is a MAUI concern (FileSystem.AppDataDirectory), so it is resolved
         // here, in the composition root, and nowhere else. LocalDbContext and
@@ -57,6 +63,12 @@ public static class MauiProgram
         builder.Services.AddTransient<TestIntroPage>();
         builder.Services.AddTransient<TestPage>();
         builder.Services.AddTransient<ProfilePage>();
+
+        // Asking a question: the dilemma screen and the advisor-persona choice.
+        builder.Services.AddTransient<DilemmaViewModel>();
+        builder.Services.AddTransient<PersonaViewModel>();
+        builder.Services.AddTransient<DilemmaPage>();
+        builder.Services.AddTransient<PersonaPage>();
 
 #if DEBUG
         builder.Logging.AddDebug();

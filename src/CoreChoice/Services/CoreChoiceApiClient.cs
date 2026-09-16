@@ -10,14 +10,28 @@ namespace CoreChoice.Services;
 public sealed record PersonaSummary(string Id, string DisplayName, string Description);
 
 /// <summary>
-/// The MAUI app's only route to the backend. Implements both outbound ports the app needs
-/// (<see cref="IDecisionClient"/> and <see cref="ICoinLedgerClient"/>) because both are the same
-/// HTTP conversation with the same device id, and translates every failure the server can return
-/// into the application exceptions the view models already understand — a screen should never see
-/// a bare <see cref="HttpRequestException"/> or status code.
+/// Outbound port for the persona picker. A separate interface from <see cref="IDecisionClient"/>
+/// and <see cref="ICoinLedgerClient"/> — declared here, next to <see cref="PersonaSummary"/>,
+/// rather than in <c>CoreChoice.Core</c>, because that DTO is a view-facing shape ("never the
+/// prompt template") with no reason to be visible to the domain. It exists so
+/// <see cref="Presentation.PersonaViewModel"/>, a public type bound from XAML, can depend on
+/// something other than the <c>internal</c> <see cref="CoreChoiceApiClient"/> itself — a public
+/// member cannot take a less-accessible type in its signature.
+/// </summary>
+public interface IPersonaCatalog
+{
+    Task<IReadOnlyList<PersonaSummary>> GetPersonasAsync(CancellationToken ct = default);
+}
+
+/// <summary>
+/// The MAUI app's only route to the backend. Implements the outbound ports the app needs
+/// (<see cref="IDecisionClient"/>, <see cref="ICoinLedgerClient"/>, <see cref="IPersonaCatalog"/>)
+/// because all three are the same HTTP conversation with the same device id, and translates every
+/// failure the server can return into the application exceptions the view models already
+/// understand — a screen should never see a bare <see cref="HttpRequestException"/> or status code.
 /// </summary>
 internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity deviceIdentity, IOptions<ApiOptions> options)
-    : IDecisionClient, ICoinLedgerClient
+    : IDecisionClient, ICoinLedgerClient, IPersonaCatalog
 {
     private static readonly JsonSerializerOptions JsonOptions = new(JsonSerializerDefaults.Web);
 

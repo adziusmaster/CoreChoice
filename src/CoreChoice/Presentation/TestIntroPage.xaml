@@ -91,7 +91,11 @@
                    TextColor="{DynamicResource Muted}"
                    HeightRequest="48"
                    HorizontalTextAlignment="Center"
-                   VerticalTextAlignment="Center" />
+                   VerticalTextAlignment="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnAskAQuestionTapped" />
+                </Label.GestureRecognizers>
+            </Label>
         </VerticalStackLayout>
 
     </Grid>

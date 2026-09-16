@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.DilemmaPage"
+             x:DataType="presentation:DilemmaViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="What are you weighing?"
+                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,8" />
+
+                <Label Text="Say it however it comes out."
+                       FontFamily="DMSans" FontSize="14" LineHeight="1.55"
+                       TextColor="{DynamicResource Muted}" Margin="0,0,0,26" />
+
+                <VerticalStackLayout Spacing="12">
+
+                    <Border Style="{StaticResource CardBorder}" Padding="15,15,15,13">
+                        <VerticalStackLayout Spacing="9">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="ONE WAY" Style="{StaticResource MicroLabel}"
+                                       TextColor="{DynamicResource Accent}" FontSize="11.5" VerticalOptions="Center" />
+                                <Button Grid.Column="1" Text="Speak" Clicked="OnSpeakOptionAClicked"
+                                        IsVisible="{Binding IsDictationAvailable}"
+                                        BackgroundColor="Transparent" TextColor="{DynamicResource Accent}"
+                                        FontFamily="DMSansMedium" FontSize="12"
+                                        WidthRequest="64" HeightRequest="44" Padding="0" BorderWidth="0" />
+                            </Grid>
+                            <Editor Text="{Binding OptionA}"
+                                    Placeholder="Quit my job to go full-time on my own app"
+                                    PlaceholderColor="{DynamicResource Faint}"
+                                    FontFamily="Lora" FontSize="17" TextColor="{DynamicResource Ink}"
+                                    AutoSize="TextChanges" BackgroundColor="Transparent" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,Auto,*" ColumnSpacing="14" HeightRequest="20">
+                        <BoxView Grid.Column="0" Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" />
+                        <Label Grid.Column="1" Text="or" FontFamily="Lora" FontAttributes="Italic"
+                               FontSize="16" TextColor="{DynamicResource Faint}" VerticalOptions="Center" />
+                        <BoxView Grid.Column="2" Color="{DynamicResource Line}" HeightRequest="1" VerticalOptions="Center" />
+                    </Grid>
+
+                    <Border Style="{StaticResource CardBorder}" Padding="15,15,15,13">
+                        <VerticalStackLayout Spacing="9">
+                            <Grid ColumnDefinitions="*,Auto">
+                                <Label Grid.Column="0" Text="THE OTHER" Style="{StaticResource MicroLabel}"
+                                       TextColor="{DynamicResource Accent}" FontSize="11.5" VerticalOptions="Center" />
+                                <Button Grid.Column="1" Text="Speak" Clicked="OnSpeakOptionBClicked"
+                                        IsVisible="{Binding IsDictationAvailable}"
+                                        BackgroundColor="Transparent" TextColor="{DynamicResource Accent}"
+                                        FontFamily="DMSansMedium" FontSize="12"
+                                        WidthRequest="64" HeightRequest="44" Padding="0" BorderWidth="0" />
+                            </Grid>
+                            <Editor Text="{Binding OptionB}"
+                                    Placeholder="Keep the job and build it on evenings and weekends"
+                                    PlaceholderColor="{DynamicResource Faint}"
+                                    FontFamily="Lora" FontSize="17" TextColor="{DynamicResource Ink}"
+                                    AutoSize="TextChanges" BackgroundColor="Transparent" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Border BackgroundColor="{DynamicResource SurfaceSunken}" Stroke="{DynamicResource LineSoft}"
+                            StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14,14,15,14">
+                        <VerticalStackLayout Spacing="7">
+                            <Label Text="Anything I should know — optional"
+                                   FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}" />
+                            <Editor Text="{Binding Context}"
+                                    Placeholder="I have about 8 months of savings."
+                                    PlaceholderColor="{DynamicResource Faint}"
+                                    FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource InkSoft}"
+                                    AutoSize="TextChanges" BackgroundColor="Transparent" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="12" Margin="0,24,0,0">
+                    <Grid ColumnDefinitions="*,Auto">
+                        <Label Grid.Column="0" Text="How much rides on it"
+                               FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
+                               VerticalOptions="End" />
+                        <Label Grid.Column="1" Text="{Binding WeightLabel}"
+                               FontFamily="Lora" FontSize="15" TextColor="{DynamicResource Accent}"
+                               VerticalOptions="End" />
+                    </Grid>
+                    <Slider Minimum="1" Maximum="5" Value="{Binding Weight}"
+                            MinimumTrackColor="{DynamicResource Accent}"
+                            MaximumTrackColor="{DynamicResource Line}"
+                            ThumbColor="{DynamicResource Accent}"
+                            HeightRequest="44" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
+
+            <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44" Margin="0,0,0,14">
+                <Grid.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnChoosePersonaTapped" />
+                </Grid.GestureRecognizers>
+                <Label Grid.Column="0" IsVisible="{Binding HasPersona}"
+                       FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
+                       VerticalTextAlignment="Center">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Answering as " />
+                            <Span Text="{Binding Persona.DisplayName}" TextColor="{DynamicResource Ink}" FontFamily="DMSansMedium" />
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <Label Grid.Column="0" IsVisible="{Binding NoPersona}"
+                       Text="Choose who answers"
+                       FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
+                       VerticalTextAlignment="Center" />
+                <Label Grid.Column="1" Text="Change" IsVisible="{Binding HasPersona}"
+                       FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Accent}"
+                       VerticalTextAlignment="Center" />
+            </Grid>
+
+            <Button Text="Think it through" Style="{StaticResource PrimaryButton}"
+                    IsEnabled="{Binding CanSubmit}" Clicked="OnThinkItThroughClicked" />
+        </VerticalStackLayout>
+
+    </Grid>
+</ContentPage>
