@@ -17,9 +17,9 @@ public sealed class ThemeService
 
     public ThemeService()
     {
-        var palette = (Palette)Preferences.Default.Get(PaletteKey, (int)Palette.Considered);
-        var mode = (ThemeMode)Preferences.Default.Get(ModeKey, (int)ThemeMode.Dark);
-        Current = new AppearanceChoice(palette, mode);
+        Current = AppearanceChoice.FromStored(
+            Preferences.Default.Get(PaletteKey, (int)AppearanceChoice.Default.Palette),
+            Preferences.Default.Get(ModeKey, (int)AppearanceChoice.Default.Mode));
 
         if (Microsoft.Maui.Controls.Application.Current is { } app)
             app.RequestedThemeChanged += (_, _) => { if (Current.Mode == ThemeMode.System) Apply(); };

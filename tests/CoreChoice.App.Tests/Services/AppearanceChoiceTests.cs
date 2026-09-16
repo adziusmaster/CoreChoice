@@ -45,4 +45,65 @@ public class AppearanceChoiceTests
         // Assert
         act.Should().Throw<InvalidOperationException>();
     }
+
+    [Theory]
+    [InlineData(0, 2, Palette.Considered, ThemeMode.Dark)]
+    [InlineData(1, 1, Palette.Composed,   ThemeMode.Light)]
+    [InlineData(2, 0, Palette.Still,      ThemeMode.System)]
+    public void FromStored_ForValuesInRange_ShouldRoundTripTheChoice(
+        int palette, int mode, Palette expectedPalette, ThemeMode expectedMode)
+    {
+        // Arrange & Act
+        var choice = AppearanceChoice.FromStored(palette, mode);
+
+        // Assert
+        choice.Palette.Should().Be(expectedPalette);
+        choice.Mode.Should().Be(expectedMode);
+    }
+
+    [Theory]
+    [InlineData(7, 1)]
+    [InlineData(-1, 1)]
+    public void FromStored_WhenPaletteNamesNoMember_ShouldFallBackWithoutTouchingMode(
+        int palette, int mode)
+    {
+        // Arrange & Act — a palette removed in a later build, or a downgraded install,
+        // leaves an integer in storage that no member answers to.
+        var choice = AppearanceChoice.FromStored(palette, mode);
+
+        // Assert — the bad field falls back; the good one is kept.
+        choice.Palette.Should().Be(AppearanceChoice.Default.Palette);
+        choice.Mode.Should().Be(ThemeMode.Light);
+    }
+
+    [Theory]
+    [InlineData(1, 9)]
+    [InlineData(1, -4)]
+    public void FromStored_WhenModeNamesNoMember_ShouldFallBackWithoutTouchingPalette(
+        int palette, int mode)
+    {
+        // Arrange & Act
+        var choice = AppearanceChoice.FromStored(palette, mode);
+
+        // Assert
+        choice.Mode.Should().Be(AppearanceChoice.Default.Mode);
+        choice.Palette.Should().Be(Palette.Composed);
+    }
+
+    [Fact]
+    public void FromStored_ForEveryDefinedPair_ShouldNeverProduceAnUndefinedEnum()
+    {
+        // Arrange
+        var palettes = Enum.GetValues<Palette>();
+        var modes = Enum.GetValues<ThemeMode>();
+
+        // Act & Assert — guards the cast itself, not just the three cases above.
+        foreach (var p in palettes)
+            foreach (var m in modes)
+            {
+                var choice = AppearanceChoice.FromStored((int)p, (int)m);
+                Enum.IsDefined(choice.Palette).Should().BeTrue();
+                Enum.IsDefined(choice.Mode).Should().BeTrue();
+            }
+    }
 }

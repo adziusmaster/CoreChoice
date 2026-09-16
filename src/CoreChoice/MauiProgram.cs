@@ -1,5 +1,4 @@
 using CoreChoice.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CoreChoice;
@@ -26,10 +25,6 @@ public static class MauiProgram
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-        var app = builder.Build();
-
-        app.Services.GetRequiredService<ThemeService>().Apply();
-
-        return app;
+        return builder.Build();
     }
 }

@@ -13,6 +13,16 @@ public sealed record AppearanceChoice(Palette Palette, ThemeMode Mode)
     public static AppearanceChoice Default => new(Palette.Considered, ThemeMode.Dark);
 
     /// <summary>
+    /// Rebuilds a choice from the two integers held in storage, falling back per-field when a
+    /// value names no enum member. Stored preferences outlive the code that wrote them: a
+    /// removed palette or a downgraded install would otherwise cast straight to an undefined
+    /// enum and silently resolve to the wrong dictionary.
+    /// </summary>
+    public static AppearanceChoice FromStored(int palette, int mode) => new(
+        Enum.IsDefined(typeof(Palette), palette) ? (Palette)palette : Default.Palette,
+        Enum.IsDefined(typeof(ThemeMode), mode) ? (ThemeMode)mode : Default.Mode);
+
+    /// <summary>
     /// The resource dictionary this choice resolves to. Throws for <see cref="ThemeMode.System"/>:
     /// that is a preference, not a dictionary, and resolving it requires asking the OS.
     /// </summary>
