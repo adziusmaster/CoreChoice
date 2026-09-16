@@ -193,7 +193,23 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
 
     private static async Task<T> ReadAsync<T>(HttpResponseMessage response, CancellationToken ct)
     {
-        var value = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+        T? value;
+        try
+        {
+            value = await response.Content.ReadFromJsonAsync<T>(JsonOptions, ct);
+        }
+        catch (JsonException ex)
+        {
+            // A 2xx carrying a body that is not the JSON we expect. The realistic cause on a phone
+            // is a captive portal or proxy answering with its own HTML page, not our server.
+            throw new MalformedAdvisorResponseException($"the response body was not valid JSON: {ex.Message}");
+        }
+        catch (NotSupportedException ex)
+        {
+            // Same situation, caught earlier: the content type is not JSON at all.
+            throw new MalformedAdvisorResponseException($"the response was not JSON: {ex.Message}");
+        }
+
         return value ?? throw new MalformedAdvisorResponseException("the response body was empty or null.");
     }
 

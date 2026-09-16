@@ -1,4 +1,5 @@
 using System.Net;
+using System.Text;
 using System.Text.Json;
 using CoreChoice.Application;
 using CoreChoice.Domain;
@@ -377,5 +378,41 @@ public class ApiClientTests
 
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
+    }
+
+    [Fact]
+    public async Task GetPersonasAsync_WhenA200CarriesHtmlInsteadOfJson_ShouldThrowMalformedAdvisorResponse()
+    {
+        // Arrange — a captive portal or proxy answering with its own page. The status is 200, so
+        // nothing upstream treats it as a failure, and the raw parse error would reach the screen.
+        var handler = new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("<html><body>Sign in to continue</body></html>",
+                Encoding.UTF8, "text/html"),
+        });
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.GetPersonasAsync();
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
+    }
+
+    [Fact]
+    public async Task GetPersonasAsync_WhenA200CarriesTruncatedJson_ShouldThrowMalformedAdvisorResponse()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent("[{\"id\":\"generic\",", Encoding.UTF8, "application/json"),
+        });
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.GetPersonasAsync();
+
+        // Assert
+        await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
     }
 }
