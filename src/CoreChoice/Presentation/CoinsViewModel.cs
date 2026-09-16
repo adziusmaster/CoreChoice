@@ -42,11 +42,12 @@ public sealed partial class CoinsViewModel(IBillingService billing, ICoinLedgerC
     /// </summary>
     private const bool PurchasingEnabled = false;
 
-    // The three product ids created in the Play Console (see IBillingService's own doc). The app
-    // never invents ids of its own; these are exactly what Packs is expected to contain.
-    public const string TenAnalysesProductId = "corechoice.analyses.10";
-    public const string ThirtyAnalysesProductId = "corechoice.analyses.30";
-    public const string HundredAnalysesProductId = "corechoice.analyses.100";
+    // The three product ids created in the Play Console. Sourced from AnalysisPackCatalog — the
+    // single place this app lists them — rather than repeated here, so this list and
+    // PlayBillingService's FallbackPacks cannot drift apart (see AnalysisPackCatalog's own doc).
+    public const string TenAnalysesProductId = AnalysisPackCatalog.TenAnalysesProductId;
+    public const string ThirtyAnalysesProductId = AnalysisPackCatalog.ThirtyAnalysesProductId;
+    public const string HundredAnalysesProductId = AnalysisPackCatalog.HundredAnalysesProductId;
 
     [ObservableProperty]
     private int balance;

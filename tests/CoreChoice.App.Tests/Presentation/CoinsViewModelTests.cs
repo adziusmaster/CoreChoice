@@ -232,6 +232,38 @@ public class CoinsViewModelTests
     }
 
     [Fact]
+    public async Task BuyAsync_WhenTheCallerTokenIsCancelledRightAfterRedemptionSucceeds_ShouldStillConsumeThePurchase()
+    {
+        // Arrange — the exact race BuyAsync's CancellationToken.None guards against: the coins are
+        // already granted, and then the caller's own token is cancelled a moment before the final
+        // ConsumeAsync call. Consuming must still happen, unconditionally, or the person ends up
+        // holding granted coins on an un-consumed purchase that then blocks a future repurchase
+        // with ITEM_ALREADY_OWNED. FakeBillingService.ConsumeAsync throws if handed an already-
+        // cancelled token, so this test fails outright if CoinsViewModel ever passes `ct` here
+        // instead of CancellationToken.None.
+        var ticket = new PurchaseTicket("corechoice.analyses.10", "token-race");
+        var billing = new FakeBillingService { BuyResult = ticket };
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        using var cts = new CancellationTokenSource();
+        ledger.RedeemPurchaseAsync(Arg.Any<PurchaseTicket>(), Arg.Any<CancellationToken>())
+            .Returns<GrantResult>(_ =>
+            {
+                cts.Cancel();
+                return new GrantResult(true, 10, null);
+            });
+        var vm = new CoinsViewModel(billing, ledger);
+        await vm.LoadAsync();
+
+        // Act
+        await vm.BuyAsync("corechoice.analyses.10", cts.Token);
+
+        // Assert
+        billing.ConsumedTokens.Should().ContainSingle().Which.Should().Be("token-race");
+        vm.Balance.Should().Be(10);
+    }
+
+    [Fact]
     public async Task BuyAsync_ShouldClearAnyMessageLeftOverFromAPreviousAttempt()
     {
         // Arrange

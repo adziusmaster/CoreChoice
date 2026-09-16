@@ -77,7 +77,14 @@ public static class MauiProgram
         // The analyses/coins store. Real Google Play Billing on Android; buying itself is
         // disabled for now (see CoinsViewModel's own doc) since there is no backend endpoint yet
         // to redeem a purchase.
-        builder.Services.AddTransient<IBillingService, PlayBillingService>();
+        //
+        // Singleton, not transient: PlayBillingService owns a BillingClient connection that is
+        // expensive to open and is meant to live for the app's whole session — a fresh AddTransient
+        // instance on every navigation to the coins page opened a new connection that was then
+        // never closed. One long-lived instance, closed by PlayBillingService.Dispose when the DI
+        // container itself is disposed at app shutdown, matches how the Play Billing Library
+        // itself expects to be used.
+        builder.Services.AddSingleton<IBillingService, PlayBillingService>();
         builder.Services.AddTransient<CoinsViewModel>();
         builder.Services.AddTransient<CoinsPage>();
 

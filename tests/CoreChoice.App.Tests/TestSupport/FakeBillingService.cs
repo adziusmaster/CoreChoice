@@ -15,9 +15,9 @@ internal sealed class FakeBillingService : IBillingService
 
     public IReadOnlyList<AnalysisPack> FallbackPacks { get; set; } =
     [
-        new AnalysisPack("corechoice.analyses.10", 10, "€2.99 (estimate)"),
-        new AnalysisPack("corechoice.analyses.30", 30, "€5.99 (estimate)"),
-        new AnalysisPack("corechoice.analyses.100", 100, "€14.99 (estimate)"),
+        new AnalysisPack(AnalysisPackCatalog.TenAnalysesProductId, 10, "€2.99 (estimate)"),
+        new AnalysisPack(AnalysisPackCatalog.ThirtyAnalysesProductId, 30, "€5.99 (estimate)"),
+        new AnalysisPack(AnalysisPackCatalog.HundredAnalysesProductId, 100, "€14.99 (estimate)"),
     ];
 
     /// <summary>Set to make <see cref="GetPacksAsync"/> return these instead of throwing.</summary>
@@ -47,6 +47,13 @@ internal sealed class FakeBillingService : IBillingService
 
     public Task ConsumeAsync(string purchaseToken, CancellationToken ct = default)
     {
+        // Deliberately honours the token it is handed rather than ignoring it: CoinsViewModel.
+        // BuyAsync must finalise a granted purchase with CancellationToken.None, never the
+        // caller's own token, or a cancellation racing in right after redemption succeeds would
+        // leave a paid, granted purchase un-consumed. Throwing here when the given token is
+        // already cancelled is what makes a regression to the wrong token fail a test instead of
+        // passing silently.
+        ct.ThrowIfCancellationRequested();
         ConsumedTokens.Add(purchaseToken);
         return Task.CompletedTask;
     }

@@ -22,51 +22,73 @@ namespace CoreChoice.Platforms.Android;
 /// <b>un-consumed</b>; <see cref="Presentation.CoinsViewModel.BuyAsync"/> redeems it with the
 /// backend first and only then calls <see cref="ConsumeAsync"/>, so a failed grant never loses a
 /// purchase — Google auto-refunds an un-consumed purchase after a few days.
+///
+/// <para>Registered as a singleton (see <c>MauiProgram</c>): a <c>BillingClient</c> connection is
+/// expensive to open and is meant to live for the app's whole session, not be reopened on every
+/// navigation to the coins page. <see cref="Dispose"/> ends that connection; once disposed, every
+/// member throws <see cref="ObjectDisposedException"/> rather than silently opening a fresh
+/// connection behind a lifetime that is supposed to be over.</para>
 /// </summary>
-internal sealed class PlayBillingService : IBillingService
+internal sealed class PlayBillingService : IBillingService, IDisposable
 {
     public bool IsSupported => true;
 
-    // Exactly the ids created in the Play Console (see IBillingService's own doc). Prices here are
-    // placeholders only: FallbackPacks is what the UI shows when Play cannot be reached, never a
-    // guess at what checkout would actually charge.
-    public IReadOnlyList<AnalysisPack> FallbackPacks { get; } =
-    [
-        new AnalysisPack("corechoice.analyses.10", 10, "€2.99"),
-        new AnalysisPack("corechoice.analyses.30", 30, "€5.99"),
-        new AnalysisPack("corechoice.analyses.100", 100, "€14.99"),
-    ];
+    // Prices here are placeholders only: FallbackPacks is what the UI shows when Play cannot be
+    // reached, never a guess at what checkout would actually charge. Ids and analysis counts come
+    // from AnalysisPackCatalog — the single source of truth CoinsViewModel also reads from — so
+    // this list and CoinsViewModel's product ids cannot drift apart.
+    public IReadOnlyList<AnalysisPack> FallbackPacks { get; } = BuildFallbackPacks();
+
+    private static IReadOnlyList<AnalysisPack> BuildFallbackPacks()
+    {
+        var placeholderPrices = new Dictionary<string, string>
+        {
+            [AnalysisPackCatalog.TenAnalysesProductId] = "€2.99",
+            [AnalysisPackCatalog.ThirtyAnalysesProductId] = "€5.99",
+            [AnalysisPackCatalog.HundredAnalysesProductId] = "€14.99",
+        };
+
+        return AnalysisPackCatalog.Entries
+            .Select(entry => new AnalysisPack(entry.ProductId, entry.Analyses, placeholderPrices[entry.ProductId]))
+            .ToList();
+    }
 
     private readonly SemaphoreSlim _connectGate = new(1, 1);
     private BillingClient? _client;
     private TaskCompletionSource<PurchaseTicket?>? _purchaseTcs;
+    private bool _disposed;
 
     public async Task<IReadOnlyList<AnalysisPack>> GetPacksAsync(CancellationToken ct = default)
     {
-        try
-        {
-            var client = await EnsureConnectedAsync().ConfigureAwait(false);
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
-            var resolved = new List<AnalysisPack>(FallbackPacks.Count);
-            foreach (var pack in FallbackPacks)
-            {
-                var price = await TryGetFormattedPriceAsync(client, pack.ProductId).ConfigureAwait(false);
-                // Keep the placeholder label for any pack Play could not price (e.g. not live yet).
-                resolved.Add(price is null ? pack : pack with { DisplayPrice = price });
-            }
+        var client = await EnsureConnectedAsync().ConfigureAwait(false);
 
-            return resolved;
-        }
-        catch
+        var resolutions = new List<PackPriceResolution>(FallbackPacks.Count);
+        foreach (var pack in FallbackPacks)
         {
-            // Offline or billing unavailable: fall back to the placeholder labels entirely, rather
-            // than a partial mix of real and placeholder prices.
-            return FallbackPacks;
+            var price = await TryGetFormattedPriceAsync(client, pack.ProductId).ConfigureAwait(false);
+            resolutions.Add(new PackPriceResolution(pack.ProductId, price));
         }
+
+        // All-or-nothing (see StorePriceResolver's own doc): a made-up price shown next to real
+        // ones, with nothing on screen to tell them apart, is worse than showing no real price at
+        // all — the person believes it. So even one pack Play could not price (offer list empty,
+        // FormattedPrice missing or blank) means throwing here, which sends the caller
+        // (CoinsViewModel.LoadAsync) down its existing offline/unavailable fallback path — the
+        // complete placeholder set, and the "these are placeholder prices" banner turned on.
+        var (packs, pricesAreFromStore) = StorePriceResolver.Resolve(FallbackPacks, resolutions);
+        if (!pricesAreFromStore)
+            throw new InvalidOperationException(
+                "One or more analysis packs could not be priced from Google Play; refusing a partial mix of real and placeholder prices.");
+
+        return packs;
     }
 
     public async Task<PurchaseTicket?> BuyAsync(string productId, CancellationToken ct = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         var client = await EnsureConnectedAsync().ConfigureAwait(false);
 
         // Reuse an earlier purchase that was never consumed (e.g. a prior grant failed): buying
@@ -114,6 +136,8 @@ internal sealed class PlayBillingService : IBillingService
 
     public async Task ConsumeAsync(string purchaseToken, CancellationToken ct = default)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (string.IsNullOrWhiteSpace(purchaseToken))
             return;
 
@@ -125,8 +149,25 @@ internal sealed class PlayBillingService : IBillingService
         await client.ConsumeAsync(consumeParams).ConfigureAwait(false);
     }
 
+    /// <summary>Ends the Play Billing connection. Registered as a singleton, so this runs once,
+    /// when the DI container itself is disposed at app shutdown — not on every page navigation.
+    /// Safe to call more than once; every other member throws afterwards instead of silently
+    /// reconnecting.</summary>
+    public void Dispose()
+    {
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        _client?.EndConnection();
+        _client = null;
+        _connectGate.Dispose();
+    }
+
     private async Task<BillingClient> EnsureConnectedAsync()
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         if (_client is { IsReady: true } ready)
             return ready;
 
@@ -170,7 +211,7 @@ internal sealed class PlayBillingService : IBillingService
         {
             var details = await GetProductDetailsAsync(client, productId).ConfigureAwait(false);
             var formatted = details.OneTimePurchaseOfferDetailsList?.FirstOrDefault()?.FormattedPrice;
-            return string.IsNullOrEmpty(formatted) ? null : formatted;
+            return string.IsNullOrWhiteSpace(formatted) ? null : formatted;
         }
         catch
         {
