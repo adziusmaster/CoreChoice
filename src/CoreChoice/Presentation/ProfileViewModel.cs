@@ -20,6 +20,15 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
     [ObservableProperty]
     private string summary = string.Empty;
 
+    /// <summary>
+    /// The one locally-generated sentence of commentary on the result card — which trait pulls
+    /// hardest from the middle, which pulls hardest the other way, and what that combination tends
+    /// to cost. Built by <see cref="ProfileNoteComposer"/> from the profile already on the phone,
+    /// never fetched, so it renders with no signal at all.
+    /// </summary>
+    [ObservableProperty]
+    private string note = string.Empty;
+
     [ObservableProperty]
     private int balance;
 
@@ -58,6 +67,7 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
 
         Profile = stored;
         Summary = BuildSummary(stored);
+        Note = ProfileNoteComposer.Compose(stored);
 
         try
         {

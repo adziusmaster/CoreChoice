@@ -37,5 +37,8 @@
     <Compile Include="..\..\src\CoreChoice\Presentation\TestIntroViewModel.cs" Link="Linked\TestIntroViewModel.cs" />
     <Compile Include="..\..\src\CoreChoice\Presentation\TestViewModel.cs" Link="Linked\TestViewModel.cs" />
     <Compile Include="..\..\src\CoreChoice\Presentation\ProfileViewModel.cs" Link="Linked\ProfileViewModel.cs" />
+    <!-- Task 7c: the display band and the local note composer, both MAUI-free. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\TraitDisplayBand.cs" Link="Linked\TraitDisplayBand.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\ProfileNoteComposer.cs" Link="Linked\ProfileNoteComposer.cs" />
   </ItemGroup>
 </Project>

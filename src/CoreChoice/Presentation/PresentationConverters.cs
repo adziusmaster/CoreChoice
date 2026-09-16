@@ -33,12 +33,14 @@ public sealed class TestPositionConverter : IValueConverter
         throw new NotSupportedException();
 }
 
-/// <summary>Capitalizes <see cref="TraitScore.Band"/> ("low"/"moderate"/"high") for display.</summary>
+/// <summary>Renders a trait's five-level <see cref="TraitDisplayBand"/> ("Very low" .. "Very high")
+/// for the result screen. Deliberately not <see cref="TraitScore.Band"/> — that coarser band feeds
+/// the server prompt, not this screen.</summary>
 public sealed class TraitBandLabelConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         value is TraitScore score
-            ? culture.TextInfo.ToTitleCase(score.Band)
+            ? score.DisplayBand()
             : string.Empty;
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>

@@ -104,7 +104,7 @@
                 </VerticalStackLayout>
 
                 <Border Style="{StaticResource CardBorder}" Padding="16" Margin="0,0,0,14">
-                    <Label Text="{Binding Summary}"
+                    <Label Text="{Binding Note}"
                            FontFamily="Lora" FontSize="16" LineHeight="1.58"
                            TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
                 </Border>

@@ -28,6 +28,7 @@ public class ProfileViewModelTests
         // Assert
         vm.Profile.IsPresent.Should().BeTrue();
         vm.Summary.Should().NotBeEmpty();
+        vm.Note.Should().NotBeEmpty();
         repository.SaveProfileCallCount.Should().Be(1);
         repository.SavedProfile.Should().Be(vm.Profile);
     }
