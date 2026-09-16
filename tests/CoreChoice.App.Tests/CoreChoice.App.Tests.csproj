@@ -26,5 +26,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="..\..\src\CoreChoice\Services\AppearanceChoice.cs" Link="Linked\AppearanceChoice.cs" />
+    <Compile Include="..\..\src\CoreChoice\Data\LocalDbContext.cs" Link="Linked\LocalDbContext.cs" />
+    <Compile Include="..\..\src\CoreChoice\Data\SqliteProfileRepository.cs" Link="Linked\SqliteProfileRepository.cs" />
   </ItemGroup>
 </Project>
