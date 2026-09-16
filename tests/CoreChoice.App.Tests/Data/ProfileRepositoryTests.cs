@@ -126,4 +126,95 @@ public class ProfileRepositoryTests
         (await repo.LoadProfileAsync()).IsPresent.Should().BeTrue();
         conn.Dispose();
     }
+
+    private static string ColumnType(SqliteConnection conn, string table, string column)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = $"SELECT typeof({column}) FROM {table} LIMIT 1";
+        return (string)cmd.ExecuteScalar()!;
+    }
+
+    [Fact]
+    public async Task SaveAnswerAsync_ShouldStoreTheDateAsAnIntegerOfUtcTicks()
+    {
+        // Arrange — asserting the STORED representation, not a round-trip. A round-trip passes
+        // with or without the conversion, which is how a dropped HasConversion stayed invisible:
+        // SQLite happily persists a DateTimeOffset as TEXT and reads it back intact. The column
+        // being an integer is the thing that keeps date comparisons translatable server-side.
+        var (repo, conn) = Build();
+
+        // Act
+        await repo.SaveAnswerAsync(17, 4);
+
+        // Assert
+        ColumnType(conn, "Answers", "AnsweredAt").Should().Be("integer");
+        conn.Dispose();
+    }
+
+    [Fact]
+    public async Task SaveProfileAsync_ShouldStoreTheDateAsAnIntegerOfUtcTicks()
+    {
+        // Arrange
+        var (repo, conn) = Build();
+
+        // Act
+        await repo.SaveProfileAsync(new OceanProfile(
+            TraitScore.From(50), TraitScore.From(50), TraitScore.From(50),
+            TraitScore.From(50), TraitScore.From(50)));
+
+        // Assert
+        ColumnType(conn, "Profiles", "ScoredAt").Should().Be("integer");
+        conn.Dispose();
+    }
+
+    [Fact]
+    public async Task SaveAnswerAsync_ForAnOffsetDate_ShouldStoreTheUtcInstantNotTheLocalClock()
+    {
+        // Arrange — UtcTicks, not Ticks. Storing the wall-clock reading of an offset date would
+        // shift every timestamp by the offset, and the error only shows outside UTC+0.
+        var (repo, conn) = Build();
+        var before = DateTimeOffset.UtcNow.UtcTicks;
+
+        // Act
+        await repo.SaveAnswerAsync(17, 4);
+
+        // Assert — the stored tick count is a UTC instant bracketing this test's own run.
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "SELECT AnsweredAt FROM Answers LIMIT 1";
+        var stored = (long)cmd.ExecuteScalar()!;
+        stored.Should().BeInRange(before, DateTimeOffset.UtcNow.UtcTicks);
+        conn.Dispose();
+    }
+
+    [Fact]
+    public async Task LoadAnswersAsync_ShouldReportTheMostRecentAnswerTime()
+    {
+        // Arrange
+        var (repo, conn) = Build();
+        var before = DateTimeOffset.UtcNow;
+
+        // Act
+        await repo.SaveAnswerAsync(1, 3);
+        await repo.SaveAnswerAsync(2, 5);
+        var answers = await repo.LoadAnswersAsync();
+
+        // Assert
+        answers.UpdatedAt.Should().BeOnOrAfter(before);
+        conn.Dispose();
+    }
+
+    [Fact]
+    public async Task LoadAnswersAsync_WhenNothingIsAnswered_ShouldNotClaimAnUpdateTime()
+    {
+        // Arrange
+        var (repo, conn) = Build();
+
+        // Act
+        var answers = await repo.LoadAnswersAsync();
+
+        // Assert
+        answers.Responses.Should().BeEmpty();
+        answers.UpdatedAt.Should().Be(DateTimeOffset.MinValue);
+        conn.Dispose();
+    }
 }
