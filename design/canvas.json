@@ -1,0 +1,145 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "1 \u00b7 Before the test"
+    },
+    {
+      "file": "TestQuestion.dc.html",
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "2 \u00b7 The 50 items"
+    },
+    {
+      "file": "ProfileResult.dc.html",
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "3 \u00b7 Your profile"
+    },
+    {
+      "file": "Dilemma.dc.html",
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "4 \u00b7 The dilemma"
+    },
+    {
+      "file": "PersonaPick.dc.html",
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "5 \u00b7 Who answers"
+    },
+    {
+      "file": "Loading.dc.html",
+      "x": 0,
+      "y": 964,
+      "w": 390,
+      "h": 844,
+      "title": "6 \u00b7 While it thinks"
+    },
+    {
+      "file": "Answer.dc.html",
+      "x": 470,
+      "y": 964,
+      "w": 390,
+      "h": 844,
+      "title": "7 \u00b7 The answer"
+    },
+    {
+      "file": "Labels.dc.html",
+      "x": 940,
+      "y": 964,
+      "w": 390,
+      "h": 844,
+      "title": "7a \u00b7 Verdict labels"
+    },
+    {
+      "file": "Coins.dc.html",
+      "x": 1410,
+      "y": 964,
+      "w": 390,
+      "h": 844,
+      "title": "8 \u00b7 Analyses"
+    },
+    {
+      "file": "Settings.dc.html",
+      "x": 1880,
+      "y": 964,
+      "w": 390,
+      "h": 844,
+      "title": "9 \u00b7 Appearance"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "settled",
+      "x": -430,
+      "y": -60,
+      "w": 350,
+      "text": "CoreChoice \u2014 the full set\n\nSettled: Lora for anything the app says, DM Sans for the interface. Considered palette as the default, Composed and Still in Settings.\n\nTop row is the first-run path \u2014 test, profile, then a question. Bottom row is the answer path plus the two utility screens.\n\nThe advice text is real output from the working backend, so every layout is holding true content at true length."
+    },
+    {
+      "id": "promise",
+      "x": -430,
+      "y": 300,
+      "w": 350,
+      "text": "Screen 1 \u2014 the promise in full\n\nThe two ticks are the whole conversion argument and they come BEFORE the first question, not after the last: your result is free permanently, and finishing adds five analyses.\n\nBelow them, the three things that decide whether a low-conscientiousness user finishes: you can stop anywhere, nothing leaves the phone, answer on instinct."
+    },
+    {
+      "id": "test",
+      "x": 470,
+      "y": 900,
+      "w": 350,
+      "text": "Screen 2 \u2014 three items at a time\n\nNot five. At 390px with 44px targets, five Likert rows means scrolling mid-question, and scrolling is where people quit.\n\nProgress is shown as '12 of 50' with a hairline bar. Honest about the length \u2014 hiding it would be the paywall move in a different costume."
+    },
+    {
+      "id": "profile-note",
+      "x": 940,
+      "y": 900,
+      "w": 350,
+      "text": "Screen 3 \u2014 a position, not a quantity\n\nEach trait is a dot on a line rather than a filled bar. A fill reads as 'how much you have out of the maximum', which is wrong for personality and nudges toward the same 'something is missing' feeling we removed from the verdict.\n\nThe five-analyses grant is confirmed here, on the screen where the promise is kept."
+    },
+    {
+      "id": "persona-note",
+      "x": 1880,
+      "y": 900,
+      "w": 350,
+      "text": "Screen 5 \u2014 one suggested, five listed\n\nThe suggestion carries its reasoning ('weighted five out of five, and you are asking about years'). A recommendation that explains itself is one people accept instead of re-deciding.\n\nThe other five are present and one tap away \u2014 never a grid of six."
+    },
+    {
+      "id": "verdict-note",
+      "x": 1410,
+      "y": 1900,
+      "w": 350,
+      "text": "Screen 7a is for you, not users\n\nFour labels over the confidence the model already returns: Clear direction, Strong case, Slight edge, Genuinely close. Users never see a number.\n\n'Strong case' rather than 'strong match' on purpose \u2014 it describes the argument the advisor made, not a fit with your personality. Nothing here claims to measure alignment, because nothing here does. A real alignment score would need its own schema field and a prompt change; worth doing deliberately if you want it, never by relabelling."
+    },
+    {
+      "id": "coins-note",
+      "x": 1880,
+      "y": 1900,
+      "w": 350,
+      "text": "Screen 8 \u2014 prices are placeholders\n\n[YOUR PRICES] \u2014 the tiers and the euro figures are illustrative until you set them against real Gemini cost. Measured: roughly 700 to 950 tokens per analysis.\n\n'No subscription, nothing renews' is at the bottom deliberately. It is the sentence that answers the suspicion the whole category has earned."
+    },
+    {
+      "id": "tokens",
+      "x": -430,
+      "y": 1560,
+      "w": 350,
+      "text": "For the build: the palette needs more tokens than three\n\nThese screens use about eight colours that are not in the nine-token set \u2014 border tints on wash boxes (#1F3A36, #2A514C), a dimmed accent for secondary text (#7FB8B2), and two ground steps below Surface (#0E1313, #161E1D).\n\nThey are used consistently, so they are a real extended palette rather than drift. Name them properly in the MAUI theme files \u2014 AccentLine, AccentDim, SurfaceSunken, LineSoft \u2014 so all three palettes define the same keys. Leaving them unnamed is how a fourth theme ends up half-styled later."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #4FD1C5; } a:hover { color: #4FD1C5; }
+    @keyframes breathe { 0%,100% { opacity: 0.2; } 50% { opacity: 0.85; } }
+  </style>
+</helmet>
+<div style="width: 390px; height: 844px; background: #0A0D0D; font-family: 'DM Sans', system-ui, sans-serif; color: #EAF2F1; display: flex; flex-direction: column; padding: 52px 24px 24px; box-sizing: border-box; overflow: hidden;">
+  <div style="font-family: Lora, Georgia, serif; font-size: 27px; line-height: 1.28; font-weight: 500; letter-spacing: -0.013em; margin-bottom: 8px;">Who should answer this?</div>
+  <div style="font-size: 14px; line-height: 1.55; color: #879795; margin-bottom: 18px;">Chosen for you from what you told us. Change it if it does not fit.</div>
+
+  <div style="background: #132422; border: 1px solid #2A514C; border-radius: 12px; padding: 18px; margin-bottom: 20px;">
+    <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 12px;">
+      <div style="width: 6px; height: 6px; border-radius: 50%; background: #4FD1C5;"></div>
+      <div style="font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; color: #4FD1C5; font-weight: 600;">Suggested</div>
+    </div>
+    <div style="font-family: Lora, Georgia, serif; font-size: 23px; line-height: 1.3; margin-bottom: 10px;">The Long View</div>
+    <div style="font-size: 14.5px; line-height: 1.55; color: #C6D5D3; margin-bottom: 12px;">Answers as the person you will be in ten years. Weighs what compounds against what merely feels urgent.</div>
+    <div style="font-size: 13px; line-height: 1.5; color: #7FB8B2; font-style: italic; font-family: Lora, Georgia, serif;">Suggested: you weighted this five out of five, and you are asking about years.</div>
+  </div>
+
+  <div style="font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #5A6968; font-weight: 600; margin-bottom: 4px;">Other voices</div>
+    <div style="display: flex; align-items: center; gap: 13px; padding: 11px 0; border-bottom: 1px solid #141B1A;">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; color: #EAF2F1; margin-bottom: 3px;">Devil's Advocate</div>
+        <div style="font-size: 12.5px; color: #5A6968; line-height: 1.4;">Attacks whichever option you are leaning toward</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E4F4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 13px; padding: 11px 0; border-bottom: 1px solid #141B1A;">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; color: #EAF2F1; margin-bottom: 3px;">Warm Support</div>
+        <div style="font-size: 12.5px; color: #5A6968; line-height: 1.4;">Names the feeling underneath the question</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E4F4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 13px; padding: 11px 0; border-bottom: 1px solid #141B1A;">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; color: #EAF2F1; margin-bottom: 3px;">Pure Logic</div>
+        <div style="font-size: 12.5px; color: #5A6968; line-height: 1.4;">Trade-offs and base rates. No reassurance</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E4F4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 13px; padding: 11px 0; border-bottom: 1px solid #141B1A;">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; color: #EAF2F1; margin-bottom: 3px;">The Pragmatist</div>
+        <div style="font-size: 12.5px; color: #5A6968; line-height: 1.4;">Cost, time, effort and how easily it is undone</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E4F4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+    <div style="display: flex; align-items: center; gap: 13px; padding: 11px 0; border-bottom: 1px solid #141B1A;">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 15px; color: #EAF2F1; margin-bottom: 3px;">The Gut Check</div>
+        <div style="font-size: 12.5px; color: #5A6968; line-height: 1.4;">Short and decisive. One answer, no hedging</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#3E4F4D" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m9 18 6-6-6-6"/></svg>
+    </div>
+
+  <div style="flex-grow: 1;"></div>
+  <div style="height: 52px; border-radius: 10px; background: #4FD1C5; color: #04100F; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600;">Ask The Long View</div>
+</div>
+</x-dc>
+</body>
+</html>
