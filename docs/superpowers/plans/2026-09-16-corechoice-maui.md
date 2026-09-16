@@ -1279,7 +1279,19 @@ Register in `MauiProgram`: `ThemeService`, `IDeviceIdentity`, `IProfileRepositor
 - [ ] **Step 3: Implement the view model and the page**, matching artboard `9 · Appearance`.
 - [ ] **Step 4: Wire the shell and DI. Create the database on first launch** and call `ThemeService.Apply()` before the first page renders, or the app flashes unstyled.
 - [ ] **Step 5: Run the full suite** — app tests green, Core 77, Server 85, build at 0 warnings.
-- [ ] **Step 6: Walk the whole app on a device, against the real backend.** Fresh install through to an answer:
+- [ ] **Step 6: Build a debug APK and hand it to the repo owner.**
+
+```bash
+dotnet build src/CoreChoice/CoreChoice.csproj -c Debug -f net10.0-android --no-restore \
+  -p:AndroidSdkDirectory=$HOME/android-sdk -p:JavaSdkDirectory=$JAVA_HOME
+ls -la src/CoreChoice/bin/Debug/net10.0-android/*.apk
+```
+
+There is no emulator or device on this machine — by the owner's decision, nothing was downloaded.
+Report the APK's full path and STOP. The walk below is theirs to perform, on their own phone, and
+the checkpoint is not met until they have done it.
+
+- [ ] **Step 7: The walk, on the owner's device, against the real backend.** Fresh install through to an answer:
   1. First launch lands on the test intro and states the free-result promise before any question.
   2. Answer all fifty. Force-stop somewhere in the middle and confirm it resumes.
   3. The profile appears with five traits and the grant message; the balance reads ten.
@@ -1288,7 +1300,7 @@ Register in `MauiProgram`: `ThemeService`, `IDeviceIdentity`, `IProfileRepositor
   6. The balance reads nine.
   7. Switch palette in Settings to Still, then Composed. Every screen follows, including ones already visited.
   8. Switch to Light. Every screen is legible; nothing is a dark-on-dark ghost.
-- [ ] **Step 7: Commit.**
+- [ ] **Step 8: Commit.**
 
 > ## CHECKPOINT — stop here
 >
