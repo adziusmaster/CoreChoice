@@ -39,11 +39,16 @@ internal sealed class StubHttpMessageHandler : HttpMessageHandler
     }
 
     public List<string> RequestBodies { get; } = [];
+    public List<RecordedRequest> Requests { get; } = [];
     public int CallCount => _index;
+
+    /// <summary>The method and URI of a request the stub received, recorded so a route or verb typo in the client is caught by tests instead of only failing against the live server.</summary>
+    public sealed record RecordedRequest(HttpMethod Method, Uri? RequestUri);
 
     protected override async Task<HttpResponseMessage> SendAsync(
         HttpRequestMessage request, CancellationToken cancellationToken)
     {
+        Requests.Add(new RecordedRequest(request.Method, request.RequestUri));
         RequestBodies.Add(request.Content is null
             ? string.Empty
             : await request.Content.ReadAsStringAsync(cancellationToken));

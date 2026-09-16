@@ -243,4 +243,139 @@ public class ApiClientTests
         personas[0].DisplayName.Should().Be("The Pragmatic Friend");
         personas[0].Description.Should().Be("Weighs tradeoffs plainly.");
     }
+
+    // Route/verb assertions below guard against the client silently drifting from the server's
+    // actual routes (src/CoreChoice.Server/Program.cs) and HTTP verbs. A stub that never records
+    // what it received cannot catch this: it will happily answer a request sent to a typo'd route.
+
+    [Fact]
+    public async Task GetPersonasAsync_ShouldRequestGetApiPersonas()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""[]"""));
+        var client = Build(handler);
+
+        // Act
+        await client.GetPersonasAsync();
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Get);
+        request.RequestUri!.AbsolutePath.Should().Be("/api/personas");
+    }
+
+    [Fact]
+    public async Task GetBalanceAsync_ShouldRequestGetApiCoinsDeviceId()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json($$"""{"deviceId":"{{DeviceId}}","balance":3}"""));
+        var client = Build(handler);
+
+        // Act
+        await client.GetBalanceAsync();
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Get);
+        request.RequestUri!.AbsolutePath.Should().Be($"/api/coins/{DeviceId}");
+    }
+
+    [Fact]
+    public async Task EnsureSeededAsync_ShouldRequestPostApiCoinsEnsure()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json($$"""{"deviceId":"{{DeviceId}}","balance":5}"""));
+        var client = Build(handler);
+
+        // Act
+        await client.EnsureSeededAsync();
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Post);
+        request.RequestUri!.AbsolutePath.Should().Be("/api/coins/ensure");
+    }
+
+    [Fact]
+    public async Task ClaimProfileGrantAsync_ShouldRequestPostApiCoinsProfileGrant()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json($$"""{"deviceId":"{{DeviceId}}","balance":10,"granted":true,"reason":null}"""));
+        var client = Build(handler);
+
+        // Act
+        await client.ClaimProfileGrantAsync();
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Post);
+        request.RequestUri!.AbsolutePath.Should().Be("/api/coins/profile-grant");
+    }
+
+    [Fact]
+    public async Task AnalyseAsync_ShouldRequestPostApiDecisions()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(StubHttpMessageHandler.Json(DecisionResponseJson));
+        var client = Build(handler);
+
+        // Act
+        await client.AnalyseAsync(RequestWith(ScoredProfile));
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Post);
+        request.RequestUri!.AbsolutePath.Should().Be("/api/decisions");
+    }
+
+    // Timeout handling: the typed client's own Timeout expiring throws TaskCanceledException
+    // wrapping a TimeoutException — never HttpRequestException — and must be translated into a
+    // DecisionUnavailableException just like an unreachable server, but ONLY when the caller's own
+    // token was not the thing that got cancelled.
+
+    private sealed class ThrowingHandler(Exception exception) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request, CancellationToken cancellationToken) =>
+            throw exception;
+    }
+
+    private static CoreChoiceApiClient BuildThrowing(Exception exception) =>
+        new(new HttpClient(new ThrowingHandler(exception)) { BaseAddress = new Uri("https://example.test/") },
+            FakeDeviceIdentity(),
+            Options.Create(new ApiOptions()));
+
+    [Fact]
+    public async Task GetPersonasAsync_WhenTheClientTimesOut_ShouldThrowDecisionUnavailable()
+    {
+        // Arrange
+        var client = BuildThrowing(new TaskCanceledException("The request was canceled due to the configured HttpClient.Timeout.", new TimeoutException()));
+
+        // Act
+        Func<Task> act = async () => await client.GetPersonasAsync();
+
+        // Assert
+        var ex = await act.Should().ThrowAsync<DecisionUnavailableException>();
+        ex.Which.Message.Should().ContainEquivalentOf("timed out");
+        ex.Which.InnerException.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task GetPersonasAsync_WhenTheCallerCancels_ShouldPropagateOperationCanceled()
+    {
+        // Arrange
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var client = BuildThrowing(new TaskCanceledException("The operation was canceled."));
+
+        // Act
+        Func<Task> act = async () => await client.GetPersonasAsync(cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }

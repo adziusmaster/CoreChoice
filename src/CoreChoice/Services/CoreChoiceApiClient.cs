@@ -117,6 +117,14 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         {
             throw new DecisionUnavailableException("The server could not be reached.", ex);
         }
+        catch (OperationCanceledException ex) when (!ct.IsCancellationRequested)
+        {
+            // The typed client's own Timeout fired (surfaced as TaskCanceledException wrapping a
+            // TimeoutException), not the caller's token — a genuine failure, not a cancellation.
+            // When ct itself was cancelled (the caller navigated away, etc.) this filter is false
+            // and the exception propagates unchanged as the cancellation it is.
+            throw new DecisionUnavailableException("The request timed out.", ex);
+        }
 
         if (!response.IsSuccessStatusCode)
             await ThrowForFailureAsync(response, ct);
