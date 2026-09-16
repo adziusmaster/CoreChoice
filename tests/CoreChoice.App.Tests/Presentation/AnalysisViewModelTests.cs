@@ -236,6 +236,29 @@ public class AnalysisViewModelTests
         vm.IsWorking.Should().BeFalse();
     }
 
+    [Fact]
+    public async Task AskAsync_WhenTheTokenIsAlreadyCancelledButAGenuineBugIsThrown_ShouldStillProduceTheMappedMessage()
+    {
+        // Arrange — a single `catch (Exception) when (!ct.IsCancellationRequested)` filter used to
+        // gate the whole catch-all, so a real bug thrown while the caller's token happened to
+        // already be cancelled fell through both the specific catches and that filtered catch-all,
+        // escaping uncaught and crashing the screen instead of showing the "coin was not spent"
+        // reassurance. This proves the split arms catch that case instead of letting it through.
+        var client = Substitute.For<IDecisionClient>();
+        using var cts = new CancellationTokenSource();
+        cts.Cancel();
+        client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsForAnyArgs(new InvalidOperationException("a genuine bug, unrelated to cancellation"));
+        var vm = new AnalysisViewModel(client);
+
+        // Act
+        await vm.AskAsync(BuildRequest(), cts.Token);
+
+        // Assert
+        vm.ErrorMessage.Should().Be("Something went wrong. Your coin was not spent.");
+        vm.IsWorking.Should().BeFalse();
+    }
+
     // ===== Verdict =====
 
     [Theory]
@@ -284,14 +307,15 @@ public class AnalysisViewModelTests
     // ===== Waiting line wiring (composer itself is swept separately) =====
 
     [Fact]
-    public async Task AskAsync_WithAProfile_ShouldNameATraitInTheWaitingLine()
+    public async Task AskAsync_WithAHighTraitProfile_ShouldNameATraitInTheWaitingLine()
     {
-        // Arrange
+        // Arrange — a HIGH trait is the one direction WaitingLineComposer names plainly (see its
+        // own tests for the low-direction case, which deliberately does not name the trait).
         var client = StubClient(new AnalysedDecision(BuildAnalysis(60), Balance: 1));
         var vm = new AnalysisViewModel(client);
 
         // Act
-        await vm.AskAsync(BuildRequest(ProfileWithOpenness(10)));
+        await vm.AskAsync(BuildRequest(ProfileWithOpenness(90)));
 
         // Assert
         vm.WaitingLine.Should().Contain("openness");

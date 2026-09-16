@@ -18,8 +18,13 @@ namespace CoreChoice.Presentation;
 /// never lets a bare exception reach the screen. Nothing escapes it uncaught, with one deliberate
 /// exception: a caller-cancelled request (the person navigated away) propagates as the
 /// <see cref="OperationCanceledException"/> it is, rather than being dressed up as a user-facing
-/// error — the same <c>when (!ct.IsCancellationRequested)</c> filter <c>CoreChoiceApiClient.SendAsync</c>
-/// already uses to tell "the caller gave up" from "something actually went wrong".
+/// error. That one exception is carved out as its own <c>catch (OperationCanceledException) when
+/// (ct.IsCancellationRequested)</c> arm — mirroring <c>CoreChoiceApiClient.SendAsync</c>'s own
+/// cancellation arm — that rethrows, ahead of a second, unconditional <c>catch (Exception)</c>.
+/// Splitting them this way (rather than one <c>catch (Exception) when (!ct.IsCancellationRequested)</c>
+/// filter doing both jobs) matters: with the single filter, a genuine bug thrown while <c>ct</c>
+/// happened to already be cancelled fell through uncaught and crashed the screen instead of
+/// showing the reassurance above.
 /// </summary>
 public sealed partial class AnalysisViewModel(IDecisionClient client) : ObservableObject
 {
@@ -141,14 +146,22 @@ public sealed partial class AnalysisViewModel(IDecisionClient client) : Observab
             ErrorMessage = "That came back unusable. Your coin was not spent.";
             CanRetry = true;
         }
-        catch (Exception) when (!ct.IsCancellationRequested)
+        catch (OperationCanceledException) when (ct.IsCancellationRequested)
+        {
+            // Genuine caller cancellation (the person navigated away): propagate it as the
+            // cancellation it is, rather than showing an error the person did not cause.
+            throw;
+        }
+        catch (Exception)
         {
             // The catch-all this codebase needs: three too-narrow-catch bugs have already shipped
             // in the HTTP client here, and a bare exception reaching this screen would show a
-            // stack-trace-shaped message where a reassurance belongs. When ct itself was
-            // cancelled, this guard is false and the exception — including a plain
-            // OperationCanceledException — propagates unchanged as the cancellation it is,
-            // rather than being shown as an error the person did not cause.
+            // stack-trace-shaped message where a reassurance belongs. Split from the cancellation
+            // arm above on purpose: a single `when (!ct.IsCancellationRequested)` filter used to
+            // gate this whole catch, which meant a genuine bug thrown while ct happened to already
+            // be cancelled fell through both arms and crashed the screen instead of showing the
+            // reassurance. This arm now catches everything that is not the caller's own
+            // cancellation, unconditionally.
             ErrorMessage = "Something went wrong. Your coin was not spent.";
             CanRetry = true;
         }

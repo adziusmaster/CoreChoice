@@ -7,35 +7,37 @@
              x:DataType="presentation:AnalysisViewModel"
              BackgroundColor="{DynamicResource Bg}">
 
-    <Grid RowDefinitions="*,Auto,Auto,*,Auto" Padding="26,48,26,26">
+    <ScrollView>
+        <Grid RowDefinitions="*,Auto,Auto,*,Auto" Padding="26,48,26,26">
 
-        <!-- Row 0: spacer, matches the artboard's top flex-grow -->
+            <!-- Row 0: spacer, matches the artboard's top flex-grow -->
 
-        <HorizontalStackLayout Grid.Row="1" Spacing="7" Margin="0,0,0,40">
-            <Ellipse x:Name="Dot1" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
-            <Ellipse x:Name="Dot2" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
-            <Ellipse x:Name="Dot3" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
-        </HorizontalStackLayout>
+            <HorizontalStackLayout Grid.Row="1" Spacing="7" Margin="0,0,0,40">
+                <Ellipse x:Name="Dot1" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
+                <Ellipse x:Name="Dot2" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
+                <Ellipse x:Name="Dot3" WidthRequest="5" HeightRequest="5" Fill="{DynamicResource Accent}" />
+            </HorizontalStackLayout>
 
-        <VerticalStackLayout Grid.Row="2" Spacing="18">
-            <Label Text="{Binding WaitingLine}"
-                   FontFamily="Lora" FontSize="26" LineHeight="1.36" CharacterSpacing="-0.15"
-                   TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap" />
-            <Label Text="It is reading who you are, not only what you asked."
-                   FontFamily="DMSans" FontSize="14" LineHeight="1.6"
-                   TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" MaximumWidthRequest="290" />
-        </VerticalStackLayout>
+            <VerticalStackLayout Grid.Row="2" Spacing="18">
+                <Label Text="{Binding WaitingLine}"
+                       FontFamily="Lora" FontSize="26" LineHeight="1.36" CharacterSpacing="-0.15"
+                       TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap" />
+                <Label Text="It is reading who you are, not only what you asked."
+                       FontFamily="DMSans" FontSize="14" LineHeight="1.6"
+                       TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" MaximumWidthRequest="290" />
+            </VerticalStackLayout>
 
-        <!-- Row 3: spacer, matches the artboard's bottom flex-grow -->
+            <!-- Row 3: spacer, matches the artboard's bottom flex-grow -->
 
-        <VerticalStackLayout Grid.Row="4" Spacing="8" IsVisible="{Binding HasReadingSummary}">
-            <BoxView Color="{DynamicResource LineSoft}" HeightRequest="1" HorizontalOptions="Fill" Margin="0,0,0,20" />
-            <Label Text="READING" Style="{StaticResource MicroLabel}" TextColor="{DynamicResource Faint}" FontSize="11.5" />
-            <Label Text="{Binding ReadingSummary}"
-                   FontFamily="Lora" FontSize="15" TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
-            <Label Text="Nothing you typed is saved anywhere."
-                   FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}" Margin="0,3,0,0" />
-        </VerticalStackLayout>
+            <VerticalStackLayout Grid.Row="4" Spacing="8" IsVisible="{Binding HasReadingSummary}">
+                <BoxView Color="{DynamicResource LineSoft}" HeightRequest="1" HorizontalOptions="Fill" Margin="0,0,0,20" />
+                <Label Text="READING" Style="{StaticResource MicroLabel}" TextColor="{DynamicResource Faint}" FontSize="11.5" />
+                <Label Text="{Binding ReadingSummary}"
+                       FontFamily="Lora" FontSize="15" TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
+                <Label Text="Nothing you typed is saved anywhere."
+                       FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}" Margin="0,3,0,0" />
+            </VerticalStackLayout>
 
-    </Grid>
+        </Grid>
+    </ScrollView>
 </ContentView>

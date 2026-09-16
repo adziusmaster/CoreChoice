@@ -1,3 +1,4 @@
+using System.Reflection;
 using CoreChoice.Domain;
 using CoreChoice.Presentation;
 using FluentAssertions;
@@ -44,16 +45,103 @@ public class WaitingLineComposerTests
     }
 
     [Fact]
-    public void Compose_ForALowConscientiousnessDominantProfile_ShouldNameConscientiousness()
+    public void Compose_ForALowConscientiousnessDominantProfile_ShouldNameTheLowPullNotCreditTheHighTrait()
     {
-        // Arrange
+        // Arrange — the exact regression this fix closes: the old line said "Weighing your
+        // conscientiousness against the pull of walking away while you still can", which credits
+        // a low-conscientiousness person with the discipline they are actually short on.
         var profile = Profile(o: 50, c: 5, e: 50, a: 50, n: 50);
 
         // Act
         var line = WaitingLineComposer.Compose(profile);
 
+        // Assert — the low trait's own pull is the force, weighed against what finishing costs.
+        line.Should().Be(
+            "Weighing the pull of walking away while you still can against the work of finishing what you have.");
+        line.Should().NotContain("your conscientiousness",
+            "a low-conscientiousness profile must not be credited with \"your conscientiousness\"");
+    }
+
+    [Fact]
+    public void Compose_ForAHighOpennessDominantProfile_ShouldNameTheTraitAsTheForce()
+    {
+        // Arrange — the mirror case: a HIGH trait genuinely is the pull, so naming it "your
+        // openness" stays correct here.
+        var profile = Profile(o: 95, c: 50, e: 50, a: 50, n: 50);
+
+        // Act
+        var line = WaitingLineComposer.Compose(profile);
+
         // Assert
-        line.Should().Contain("conscientiousness");
+        line.Should().Be("Weighing your openness against the pull of a steady income.");
+    }
+
+    /// <summary>Every trait, both directions, with the exact expected sentence — not just a
+    /// grammar check. A purely grammatical sweep would pass even if a low-direction phrase were
+    /// swapped for the wrong trait's, or for its own high-direction phrase; only an exact match
+    /// per trait/direction pair catches a meaning-level regression like that.</summary>
+    public static TheoryData<Trait, bool, string> ExpectedLines() => new()
+    {
+        { Trait.Openness, true, "Weighing your openness against the pull of a steady income." },
+        { Trait.Openness, false, "Weighing the pull of a steady income against what a new opportunity might be worth." },
+        { Trait.Conscientiousness, true, "Weighing your conscientiousness against the pull of walking away while you still can." },
+        { Trait.Conscientiousness, false, "Weighing the pull of walking away while you still can against the work of finishing what you have." },
+        { Trait.Extraversion, true, "Weighing your extraversion against the pull of a quiet room." },
+        { Trait.Extraversion, false, "Weighing the pull of a quiet room against what a room full of people might give you." },
+        { Trait.Agreeableness, true, "Weighing your agreeableness against the pull of putting yourself first." },
+        { Trait.Agreeableness, false, "Weighing the pull of putting yourself first against the ease of keeping the peace." },
+        { Trait.Neuroticism, true, "Weighing your neuroticism against the pull of staying calm about it." },
+        { Trait.Neuroticism, false, "Weighing the pull of staying calm about it against the signal that something is actually wrong." },
+    };
+
+    [Theory]
+    [MemberData(nameof(ExpectedLines))]
+    public void Compose_ForEveryTraitInBothDirections_ShouldProduceTheExactSemanticallyCorrectLine(
+        Trait trait, bool high, string expected)
+    {
+        // Arrange
+        var scores = AllTraits.ToDictionary(t => t, _ => 50);
+        scores[trait] = high ? 95 : 5;
+        var profile = Profile(
+            scores[Trait.Openness], scores[Trait.Conscientiousness], scores[Trait.Extraversion],
+            scores[Trait.Agreeableness], scores[Trait.Neuroticism]);
+
+        // Act
+        var line = WaitingLineComposer.Compose(profile);
+
+        // Assert
+        line.Should().Be(expected);
+    }
+
+    /// <summary>Reads one of <see cref="WaitingLineComposer"/>'s private phrase tables by field
+    /// name via reflection — the same approach <c>ProfileNoteComposerTests</c> uses — so the
+    /// completeness test below can name the exact missing cell without widening the composer's
+    /// public surface just for tests.</summary>
+    private static Dictionary<Trait, string> GetPhraseTable(string fieldName)
+    {
+        var field = typeof(WaitingLineComposer).GetField(fieldName, BindingFlags.NonPublic | BindingFlags.Static)
+            ?? throw new InvalidOperationException(
+                $"WaitingLineComposer no longer has a private static field named '{fieldName}'. " +
+                "Update this test to match, or restore the field.");
+
+        return (Dictionary<Trait, string>)field.GetValue(null)!;
+    }
+
+    [Theory]
+    [InlineData("HighCounterPull")]
+    [InlineData("LowCounterPull")]
+    public void PhraseTable_ForEveryTrait_ShouldHaveANonEmptyEntry(string tableName)
+    {
+        // Arrange
+        var table = GetPhraseTable(tableName);
+
+        // Act & Assert — check every trait individually so a missing or blank cell is named, not
+        // just "some entry somewhere is missing".
+        foreach (var trait in AllTraits)
+        {
+            table.Should().ContainKey(trait, $"{tableName}[{trait}] must exist");
+            table[trait].Should().NotBeNullOrWhiteSpace($"{tableName}[{trait}] must not be blank");
+        }
     }
 
     [Fact]
