@@ -28,7 +28,7 @@ public class CompositionRootTests
             {
                 services.RemoveAll(typeof(IDbContextFactory<ServerDbContext>));
                 services.RemoveAll(typeof(DbContextOptions<ServerDbContext>));
-                services.AddDbContextFactory<ServerDbContext>(o => o.UseSqlite("Filename=:memory:"));
+                services.AddSingleton(InMemoryDb.Create());
             });
         });
 
