@@ -34,8 +34,8 @@ curl -s https://api.corechoice.lechdigital.nl/api/personas
 docker compose -f deploy/docker-compose.prod.yml logs --tail 50 corechoice
 ```
 
-A healthy first boot logs the schema initializer running and nothing else.
-`/api/personas` returning six entries confirms the seed ran against the volume.
+A healthy first boot shows standard ASP.NET Core hosting lines and no errors (e.g., `Now listening on: http://+:8080`,
+`Application started...`). `/api/personas` returning six entries confirms the seed ran against the volume.
 
 ## Redeploy
 
