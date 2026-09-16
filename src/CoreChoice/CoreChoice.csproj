@@ -29,6 +29,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- The mark is a road that forks: one branch taken, one not, and a dot on the decision.
+         Colour is the Considered palette's accent on its ground, so the icon and the app agree. -->
+    <MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\AppIcon\appiconfg.svg" Color="#0A0D0D" />
+    <MauiSplashScreen Include="Resources\Splash\splash.svg" Color="#0A0D0D" BaseSize="128,128" />
     <MauiFont Include="Resources\Fonts\*" />
     <MauiImage Include="Resources\Images\*" />
     <MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />

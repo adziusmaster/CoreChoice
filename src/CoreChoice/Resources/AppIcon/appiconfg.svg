@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="456" height="456" viewBox="0 0 456 456">
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="26">
+    <!-- the shared road, before the choice -->
+    <path d="M228 340 L228 238" stroke="#4FD1C5"/>
+    <!-- the road not taken -->
+    <path d="M228 238 L150 160" stroke="#2F6F69"/>
+    <!-- the one that was -->
+    <path d="M228 238 L306 160" stroke="#4FD1C5"/>
+  </g>
+  <!-- the decision itself -->
+  <circle cx="306" cy="152" r="21" fill="#4FD1C5"/>
+</svg>
