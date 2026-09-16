@@ -91,19 +91,23 @@ public class AppearanceChoiceTests
     }
 
     [Fact]
-    public void FromStored_ForEveryDefinedPair_ShouldNeverProduceAnUndefinedEnum()
+    public void FromStored_ForAnyIntegerPair_ShouldNeverProduceAnUndefinedEnum()
     {
-        // Arrange
-        var palettes = Enum.GetValues<Palette>();
-        var modes = Enum.GetValues<ThemeMode>();
+        // Arrange — the point of the sweep is the values OUTSIDE each enum's range. Iterating
+        // only defined members would assert that valid input stays valid, which the cast gives
+        // for free and which no bug could ever break.
+        var range = Enumerable.Range(-3, 14).ToArray();   // -3..10, spanning both enums' 0..2
 
-        // Act & Assert — guards the cast itself, not just the three cases above.
-        foreach (var p in palettes)
-            foreach (var m in modes)
+        // Act & Assert
+        foreach (var palette in range)
+            foreach (var mode in range)
             {
-                var choice = AppearanceChoice.FromStored((int)p, (int)m);
-                Enum.IsDefined(choice.Palette).Should().BeTrue();
-                Enum.IsDefined(choice.Mode).Should().BeTrue();
+                var choice = AppearanceChoice.FromStored(palette, mode);
+                Enum.IsDefined(choice.Palette).Should()
+                    .BeTrue($"palette {palette} must not survive as an undefined enum");
+                Enum.IsDefined(choice.Mode).Should()
+                    .BeTrue($"mode {mode} must not survive as an undefined enum");
             }
     }
+
 }
