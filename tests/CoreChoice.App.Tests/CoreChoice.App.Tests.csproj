@@ -17,6 +17,8 @@
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
     <!-- Task 7 onward links view models, which derive from ObservableObject. -->
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Task 5 links the API client, which needs IOptions<ApiOptions>. -->
+    <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.0" />
   </ItemGroup>
   <ItemGroup>
     <Using Include="Xunit" />
@@ -28,5 +30,7 @@
     <Compile Include="..\..\src\CoreChoice\Services\AppearanceChoice.cs" Link="Linked\AppearanceChoice.cs" />
     <Compile Include="..\..\src\CoreChoice\Data\LocalDbContext.cs" Link="Linked\LocalDbContext.cs" />
     <Compile Include="..\..\src\CoreChoice\Data\SqliteProfileRepository.cs" Link="Linked\SqliteProfileRepository.cs" />
+    <Compile Include="..\..\src\CoreChoice\Services\ApiOptions.cs" Link="Linked\ApiOptions.cs" />
+    <Compile Include="..\..\src\CoreChoice\Services\CoreChoiceApiClient.cs" Link="Linked\CoreChoiceApiClient.cs" />
   </ItemGroup>
 </Project>
