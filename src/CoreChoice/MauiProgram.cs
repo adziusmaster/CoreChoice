@@ -1,3 +1,5 @@
+using CoreChoice.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace CoreChoice;
@@ -19,9 +21,15 @@ public static class MauiProgram
                 fonts.AddFont("DMSans-Bold.ttf", "DMSansBold");
             });
 
+        builder.Services.AddSingleton<ThemeService>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-        return builder.Build();
+        var app = builder.Build();
+
+        app.Services.GetRequiredService<ThemeService>().Apply();
+
+        return app;
     }
 }

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ResourceDictionary xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+                    x:Class="CoreChoice.Resources.Styles.TokensConsideredDark">
+  <Color x:Key="Bg">#0A0D0D</Color>
+  <Color x:Key="BgElevated">#0E1313</Color>
+  <Color x:Key="Surface">#121818</Color>
+  <Color x:Key="SurfaceSunken">#0E1313</Color>
+  <Color x:Key="Line">#1F2A29</Color>
+  <Color x:Key="LineSoft">#161E1D</Color>
+  <Color x:Key="Accent">#4FD1C5</Color>
+  <Color x:Key="AccentBright">#7FE3D9</Color>
+  <Color x:Key="AccentDim">#7FB8B2</Color>
+  <Color x:Key="AccentInk">#04100F</Color>
+  <Color x:Key="AccentLine">#2A514C</Color>
+  <Color x:Key="AccentWash">#132422</Color>
+  <Color x:Key="Ink">#EAF2F1</Color>
+  <Color x:Key="InkSoft">#C6D5D3</Color>
+  <Color x:Key="Muted">#879795</Color>
+  <Color x:Key="Faint">#5A6968</Color>
+</ResourceDictionary>

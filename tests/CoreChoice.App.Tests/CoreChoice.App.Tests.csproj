@@ -24,4 +24,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\CoreChoice.Core\CoreChoice.Core.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\CoreChoice\Services\AppearanceChoice.cs" Link="Linked\AppearanceChoice.cs" />
+  </ItemGroup>
 </Project>
