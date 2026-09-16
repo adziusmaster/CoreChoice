@@ -181,6 +181,7 @@ Keep exactly these six and delete the rest: `Lora-Regular.ttf`, `Lora-Medium.ttf
   <ItemGroup>
     <PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.0" />
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
   </ItemGroup>
@@ -334,15 +335,49 @@ public class MainApplication(IntPtr handle, JniHandleOwnership ownership)
 
 - [ ] **Step 6: Test project**
 
-`tests/CoreChoice.App.Tests/CoreChoice.App.Tests.csproj` — identical to `tests/CoreChoice.Core.Tests/CoreChoice.Core.Tests.csproj` except the project reference, which is:
+`tests/CoreChoice.App.Tests/CoreChoice.App.Tests.csproj` targets `net10.0` and needs MORE than a copy
+of the Core test project: later tasks compile linked source files that use EF Core and the MVVM
+toolkit, so those packages belong here from the start rather than being discovered missing mid-task.
 
 ```xml
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="coverlet.collector" Version="6.0.4" />
+    <PackageReference Include="FluentAssertions" Version="7.2.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="NSubstitute" Version="6.2.0" />
+    <PackageReference Include="xunit" Version="2.9.3" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
+    <!-- Task 4 links the SQLite repository source; Task 5 stubs HTTP. -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.0" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.13" />
+    <!-- Task 7 onward links view models, which derive from ObservableObject. -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\CoreChoice.Core\CoreChoice.Core.csproj" />
   </ItemGroup>
+</Project>
 ```
 
-It targets `net10.0` and references **Core only**, never the MAUI project — a `net10.0-android` project cannot be referenced from a plain test host. View models therefore live in a way that keeps their logic testable without MAUI types; Task 5 onward keeps that constraint.
+It references **Core only**, never the MAUI project — a `net10.0-android` project cannot be referenced
+from a plain test host. Later tasks therefore compile individual app source files as LINKED files
+(`<Compile Include="..\..\src\CoreChoice\..." Link="Linked\..." />`), which only works while those
+files avoid MAUI types.
+
+**Every view model derives from `CommunityToolkit.Mvvm.ComponentModel.ObservableObject`** and uses
+`[ObservableProperty]` / `[RelayCommand]`. The toolkit targets netstandard, so a linked view model
+compiles in a plain test host; MAUI's own `BindableObject` would not. Hand-rolling
+`INotifyPropertyChanged` across eight view models is the alternative and is not worth it.
 
 Add both new projects to `CoreChoice.slnx` alongside the existing four.
 
@@ -1188,7 +1223,11 @@ Consuming before the grant means a person pays and receives nothing when the net
 - **(a) Ship without purchasing.** Build the screen, show real store prices, and disable the buy buttons behind `IsSupported`. The app is fully usable on the ten free analyses. Billing becomes its own plan alongside the server-side Play validator.
 - **(b) Add the endpoint now.** Port PurePrep's `BillingEndpoint`, `AndroidPublisherPlayValidator`, `PlayOptions` and the `ProcessedPurchase` table, including its fail-closed rule: in Production the server refuses to start without a readable Google service-account key, because running without one makes any forged purchase token worth real coins. That is a meaningful piece of work with its own review.
 
-Implement **(a)** unless told otherwise, and stop to ask before doing (b). Note in the report which was built.
+**The repo owner has chosen (a).** Build the screen with real Play prices and the buy buttons
+disabled; do NOT stop to ask, and do not build any part of (b). Server-side purchase validation is
+the next round of work, after internal testing and before closed testing — which is also when the
+Play Console products get their prices set. Until those products are live, `GetPacksAsync` falls
+back to placeholder labels, and that is expected rather than a defect.
 
 - [ ] **Step 1: Write the failing tests.** Cover: `LoadAsync` uses store prices when the billing port returns them and sets `PricesAreFromStore` true; it falls back to `FallbackPacks` and sets that flag false when the port throws; `CanBuy` is false when `IsSupported` is false; a cancelled purchase (null ticket) leaves the balance untouched and shows no error; and — the important one — **a purchase is never consumed when the redemption step fails**, verified with a billing stub that records whether `ConsumeAsync` was called.
 - [ ] **Step 2: Run and watch them fail.**
