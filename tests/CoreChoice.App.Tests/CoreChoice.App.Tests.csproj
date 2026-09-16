@@ -33,5 +33,9 @@
     <Compile Include="..\..\src\CoreChoice\Services\ApiOptions.cs" Link="Linked\ApiOptions.cs" />
     <Compile Include="..\..\src\CoreChoice\Services\CoreChoiceApiClient.cs" Link="Linked\CoreChoiceApiClient.cs" />
     <Compile Include="..\..\src\CoreChoice\Services\VerdictLabel.cs" Link="Linked\VerdictLabel.cs" />
+    <!-- Task 7: the personality test's view models. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\TestIntroViewModel.cs" Link="Linked\TestIntroViewModel.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\TestViewModel.cs" Link="Linked\TestViewModel.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\ProfileViewModel.cs" Link="Linked\ProfileViewModel.cs" />
   </ItemGroup>
 </Project>

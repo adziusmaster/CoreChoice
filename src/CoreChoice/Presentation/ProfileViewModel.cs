@@ -1,0 +1,69 @@
+using CommunityToolkit.Mvvm.ComponentModel;
+using CoreChoice.Application;
+using CoreChoice.Domain;
+
+namespace CoreChoice.Presentation;
+
+/// <summary>
+/// Backs the "your profile" screen. Scores and persists the Big Five profile the first time this
+/// runs after the test completes, then tries — but never depends on — claiming the completion
+/// coin grant. The test result is free: rendering it is never gated on network, balance, or the
+/// ledger being reachable at all, because a person who just spent ten minutes on this may be
+/// holding a phone with no signal.
+/// </summary>
+public sealed partial class ProfileViewModel(IProfileRepository repository, ICoinLedgerClient coinLedger)
+    : ObservableObject
+{
+    [ObservableProperty]
+    private OceanProfile profile = OceanProfile.None;
+
+    [ObservableProperty]
+    private string summary = string.Empty;
+
+    [ObservableProperty]
+    private int balance;
+
+    [ObservableProperty]
+    private string? grantMessage;
+
+    public async Task LoadAsync(CancellationToken ct = default)
+    {
+        var stored = await repository.LoadProfileAsync(ct);
+
+        if (!stored.IsPresent)
+        {
+            var answers = await repository.LoadAnswersAsync(ct);
+
+            // This screen should only ever be reached at fifty of fifty answers. If it is not,
+            // IpipScoring throws IncompleteProfileException rather than scoring the partial set —
+            // a profile that looks plausible and is quietly wrong is worse than a loud failure.
+            stored = IpipScoring.Score(answers.Responses);
+            await repository.SaveProfileAsync(stored, ct);
+        }
+
+        Profile = stored;
+        Summary = BuildSummary(stored);
+
+        try
+        {
+            var grant = await coinLedger.ClaimProfileGrantAsync(ct);
+            Balance = grant.Balance;
+            GrantMessage = grant.Granted ? "You earned coins for finishing your profile." : null;
+        }
+        catch (Exception) when (!ct.IsCancellationRequested)
+        {
+            // No signal, a dead server, a rate limit — none of it may block the free result
+            // already rendered above. The balance simply stays whatever it last was.
+            GrantMessage = null;
+        }
+    }
+
+    private static string BuildSummary(OceanProfile profile) => string.Join(" · ",
+    [
+        $"Openness {profile.Openness.Band}",
+        $"Conscientiousness {profile.Conscientiousness.Band}",
+        $"Extraversion {profile.Extraversion.Band}",
+        $"Agreeableness {profile.Agreeableness.Band}",
+        $"Neuroticism {profile.Neuroticism.Band}",
+    ]);
+}
