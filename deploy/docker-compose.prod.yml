@@ -1,0 +1,55 @@
+# CoreChoice backend — production stack.
+#
+# Deployed alongside Coldstart and PurePrep on the same Hetzner host, reusing Coldstart's Caddy
+# (the `coldstart_default` network) for automatic HTTPS. This stack therefore runs only the app
+# container; TLS and routing belong to that shared Caddy.
+#
+# Add a reverse_proxy block to Coldstart's Caddyfile pointing api.corechoice.lechdigital.nl at
+# corechoice:8080.
+#
+# Deploy (from /opt/corechoice on the server):
+#   docker compose --env-file .env -f deploy/docker-compose.prod.yml up -d --build
+services:
+  # Named "corechoice", NOT "web" or "api". Compose publishes the service name as a DNS alias on
+  # the shared network, so a generic name silently hijacks a neighbouring stack's traffic. This
+  # exact mistake once made Coldstart's site serve PurePrep's API responses.
+  corechoice:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    image: corechoice-api
+    container_name: corechoice-api
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      # Server-side only — the Android app never sees this key.
+      Gemini__ApiKey: ${GEMINI_API_KEY:?set GEMINI_API_KEY in .env}
+      Gemini__Model: ${GEMINI_MODEL:-gemini-flash-lite-latest}
+      # Protects POST /api/dev/grant. Soft-degrade: unset -> that route 404s.
+      Dev__Secret: ${DEV_SECRET:-}
+      # Salts the origin hash behind the free-coin cap. Keep it stable, or the cap resets on every
+      # deploy; keep it secret, or the stored hashes become reversible by enumeration.
+      Security__IpHashSalt: ${IP_HASH_SALT:?set IP_HASH_SALT in .env}
+      Coins__FirstContactGrant: ${FIRST_CONTACT_GRANT:-5}
+      Coins__ProfileCompletionGrant: ${PROFILE_COMPLETION_GRANT:-5}
+    volumes:
+      # The coin ledger persists across redeploys.
+      - corechoice-data:/data
+    networks:
+      - coldstart_default
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+# Coldstart's Caddy lives on this network; joining it lets Caddy reach us by name.
+networks:
+  coldstart_default:
+    external: true
+
+volumes:
+  corechoice-data:
