@@ -80,6 +80,10 @@ public class TestViewModelTests
         await vm.LoadAsync();
 
         // Act / Assert — answer every item three at a time, checking AdvanceAsync after each trio.
+        // Bounded deliberately. If the page ever stops advancing — the skip-answered filter
+        // regressing is the realistic way — an unbounded loop here spins forever and the suite
+        // reports a CI timeout instead of a failed assertion, which is no signal at all.
+        var maxPages = IpipItemBank.ItemCount;   // far above the 17 pages fifty items can fill
         var results = new List<bool>();
         while (vm.CurrentPage.Count > 0)
         {
@@ -87,6 +91,9 @@ public class TestViewModelTests
                 await vm.AnswerAsync(item.Number, 3);
 
             results.Add(await vm.AdvanceAsync());
+
+            results.Count.Should().BeLessThan(maxPages,
+                "the page must keep advancing; if it stops, fail here rather than hang");
         }
 
         results.Take(results.Count - 1).Should().OnlyContain(r => r == false);
