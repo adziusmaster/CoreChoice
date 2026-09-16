@@ -126,13 +126,28 @@ If `dotnet workload list` is empty here, stop and report BLOCKED — the rest of
 
 - [ ] **Step 2: Fetch the fonts**
 
+Google's `/download?family=` zip endpoint returns the site's HTML shell to `curl`, not a zip — a
+file saved from it has a `.ttf` name and is a webpage, which renders as system fallback and looks
+like a font choice rather than a broken download. Use the JSON manifest instead, which gives direct
+`fonts.gstatic.com` URLs:
+
 ```bash
 mkdir -p src/CoreChoice/Resources/Fonts && cd src/CoreChoice/Resources/Fonts
-curl -sL "https://fonts.google.com/download?family=Lora" -o lora.zip
-curl -sL "https://fonts.google.com/download?family=DM%20Sans" -o dmsans.zip
-unzip -o -j lora.zip '*.ttf' -d . && unzip -o -j dmsans.zip '*.ttf' -d .
-rm -f lora.zip dmsans.zip
-ls
+for fam in "Lora" "DM+Sans"; do
+  curl -sL "https://fonts.google.com/download/list?family=$fam" \
+    | tail -c +6 \
+    | python3 -c "import sys,json;[print(f['url'],f['filename']) for f in json.load(sys.stdin)['manifest']['fileRefs']]"
+done | grep -Ei '(Lora|DMSans)-(Regular|Medium|SemiBold|Bold)\.ttf' \
+  | while read url name; do curl -sL "$url" -o "$(basename "$name")"; done
+ls -la
+```
+
+The `tail -c +6` strips Google's anti-JSON-hijacking prefix. Then VERIFY each file is a real font
+rather than a saved error page — a check worth doing because the failure is silent:
+
+```bash
+file *.ttf                      # must say TrueType/sfnt, never HTML
+ls -l *.ttf                     # DM Sans ~55K, Lora ~131K; a few KB means a webpage
 ```
 
 Keep exactly these six and delete the rest: `Lora-Regular.ttf`, `Lora-Medium.ttf`, `Lora-SemiBold.ttf`, `DMSans-Regular.ttf`, `DMSans-Medium.ttf`, `DMSans-Bold.ttf`. If the archive ships only variable fonts (a single `Lora[wght].ttf`), keep the variable file and register it once per family instead — note which you did in your report, because the weights available to XAML differ.
