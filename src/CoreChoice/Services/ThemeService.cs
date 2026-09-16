@@ -6,7 +6,7 @@ namespace CoreChoice.Services;
 /// Owns appearance. Swaps the single token dictionary every screen references through
 /// DynamicResource, and remembers the choice across launches.
 /// </summary>
-public sealed class ThemeService
+public sealed class ThemeService : IThemeStore
 {
     private const string PaletteKey = "corechoice_palette";
     private const string ModeKey = "corechoice_mode";

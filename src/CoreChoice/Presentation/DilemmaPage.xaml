@@ -12,9 +12,19 @@
         <ScrollView Grid.Row="0">
             <VerticalStackLayout Spacing="0">
 
-                <Label Text="What are you weighing?"
-                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
-                       TextColor="{DynamicResource Ink}" Margin="0,0,0,8" />
+                <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,8">
+                    <Label Grid.Column="0" Text="What are you weighing?"
+                           FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
+                           TextColor="{DynamicResource Ink}" VerticalOptions="Start" />
+                    <Label Grid.Column="1" Text="&#9881;" FontSize="19"
+                           TextColor="{DynamicResource Faint}"
+                           WidthRequest="44" HeightRequest="44"
+                           HorizontalTextAlignment="Center" VerticalTextAlignment="Center">
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSettingsTapped" />
+                        </Label.GestureRecognizers>
+                    </Label>
+                </Grid>
 
                 <Label Text="Say it however it comes out."
                        FontFamily="DMSans" FontSize="14" LineHeight="1.55"

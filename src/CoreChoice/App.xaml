@@ -16,6 +16,9 @@
       <presentation:TraitBandLabelConverter x:Key="TraitBandLabelConverter" />
       <presentation:TraitDotBoundsConverter x:Key="TraitDotBoundsConverter" />
       <presentation:IsNotEmptyConverter x:Key="IsNotEmptyConverter" />
+      <presentation:HexColorConverter x:Key="HexColorConverter" />
+      <presentation:PaletteSelectedConverter x:Key="PaletteSelectedConverter" />
+      <presentation:ThemeModeSelectedConverter x:Key="ThemeModeSelectedConverter" />
     </ResourceDictionary>
   </Application.Resources>
 </Application>

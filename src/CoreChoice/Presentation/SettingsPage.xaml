@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.SettingsPage"
+             x:DataType="presentation:SettingsViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <ContentPage.Resources>
+        <ResourceDictionary>
+            <Style x:Key="ModeOption" TargetType="Border">
+                <Setter Property="BackgroundColor" Value="Transparent" />
+                <Setter Property="Stroke" Value="{DynamicResource Line}" />
+                <Setter Property="StrokeThickness" Value="1" />
+                <Setter Property="StrokeShape" Value="RoundRectangle 9" />
+                <Setter Property="HeightRequest" Value="46" />
+                <Setter Property="MinimumWidthRequest" Value="44" />
+                <Setter Property="HorizontalOptions" Value="Fill" />
+            </Style>
+        </ResourceDictionary>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="Appearance"
+                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,28" />
+
+                <Label Text="MODE" Style="{StaticResource MicroLabel}" FontSize="12" Margin="0,0,0,12" />
+
+                <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8" Margin="0,0,0,30">
+
+                    <Border Grid.Column="0" Style="{StaticResource ModeOption}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Dark}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnDarkTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="Dark" FontFamily="DMSansMedium" FontSize="14"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Dark}"
+                                             Value="True">
+                                    <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Dark}"
+                                             Value="False">
+                                    <Setter Property="TextColor" Value="{DynamicResource Muted}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                    <Border Grid.Column="1" Style="{StaticResource ModeOption}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Light}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnLightTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="Light" FontFamily="DMSansMedium" FontSize="14"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Light}"
+                                             Value="True">
+                                    <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=Light}"
+                                             Value="False">
+                                    <Setter Property="TextColor" Value="{DynamicResource Muted}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                    <Border Grid.Column="2" Style="{StaticResource ModeOption}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=System}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
+                                <Setter Property="Stroke" Value="{DynamicResource Accent}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSystemTapped" />
+                        </Border.GestureRecognizers>
+                        <Label Text="System" FontFamily="DMSansMedium" FontSize="14"
+                               HorizontalTextAlignment="Center" VerticalTextAlignment="Center">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=System}"
+                                             Value="True">
+                                    <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding SelectedMode, Converter={StaticResource ThemeModeSelectedConverter}, ConverterParameter=System}"
+                                             Value="False">
+                                    <Setter Property="TextColor" Value="{DynamicResource Muted}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </Border>
+
+                </Grid>
+
+                <Label Text="PALETTE" Style="{StaticResource MicroLabel}" FontSize="12" Margin="0,0,0,12" />
+
+                <VerticalStackLayout Spacing="10">
+
+                    <!-- Considered -->
+                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Considered}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentWash}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentLine}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnConsideredTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="5">
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding ConsideredOption.GroundHex, Converter={StaticResource HexColorConverter}}" />
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding ConsideredOption.AccentHex, Converter={StaticResource HexColorConverter}}" />
+                            </HorizontalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding ConsideredOption.Name}" FontFamily="DMSans" FontSize="15" TextColor="{DynamicResource Ink}" />
+                                <Label Text="{Binding ConsideredOption.Description}" FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource AccentDim}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="&#10003;" FontFamily="DMSansBold" FontSize="16"
+                                   TextColor="{DynamicResource Accent}" VerticalOptions="Center"
+                                   IsVisible="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Considered}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Composed -->
+                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Composed}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentWash}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentLine}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnComposedTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="5">
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding ComposedOption.GroundHex, Converter={StaticResource HexColorConverter}}" />
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding ComposedOption.AccentHex, Converter={StaticResource HexColorConverter}}" />
+                            </HorizontalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding ComposedOption.Name}" FontFamily="DMSans" FontSize="15" TextColor="{DynamicResource Ink}" />
+                                <Label Text="{Binding ComposedOption.Description}" FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource Faint}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="&#10003;" FontFamily="DMSansBold" FontSize="16"
+                                   TextColor="{DynamicResource Accent}" VerticalOptions="Center"
+                                   IsVisible="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Composed}" />
+                        </Grid>
+                    </Border>
+
+                    <!-- Still -->
+                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border"
+                                         Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Still}"
+                                         Value="True">
+                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentWash}" />
+                                <Setter Property="Stroke" Value="{DynamicResource AccentLine}" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnStillTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="14">
+                            <HorizontalStackLayout Grid.Column="0" Spacing="5">
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding StillOption.GroundHex, Converter={StaticResource HexColorConverter}}" />
+                                <BoxView WidthRequest="22" HeightRequest="34" CornerRadius="5"
+                                         Color="{Binding StillOption.AccentHex, Converter={StaticResource HexColorConverter}}" />
+                            </HorizontalStackLayout>
+                            <VerticalStackLayout Grid.Column="1" Spacing="2" VerticalOptions="Center">
+                                <Label Text="{Binding StillOption.Name}" FontFamily="DMSans" FontSize="15" TextColor="{DynamicResource Ink}" />
+                                <Label Text="{Binding StillOption.Description}" FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource Faint}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="2" Text="&#10003;" FontFamily="DMSansBold" FontSize="16"
+                                   TextColor="{DynamicResource Accent}" VerticalOptions="Center"
+                                   IsVisible="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Still}" />
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <Label Grid.Row="1" Text="More palettes will appear here over time. Nothing else changes when you switch — the words, the spacing and the type stay exactly as they are."
+               FontFamily="DMSans" FontSize="12.5" LineHeight="1.55" TextColor="{DynamicResource Faint}"
+               LineBreakMode="WordWrap" Margin="0,16,0,0" />
+
+    </Grid>
+</ContentPage>

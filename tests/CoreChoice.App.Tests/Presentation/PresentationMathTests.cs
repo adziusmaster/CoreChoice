@@ -1,4 +1,5 @@
 using CoreChoice.Presentation;
+using CoreChoice.Services;
 using FluentAssertions;
 
 namespace CoreChoice.App.Tests.Presentation;
@@ -116,5 +117,36 @@ public class PresentationMathTests
 
         // Assert
         isNotEmpty.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(Palette.Considered, "Considered", true)]
+    [InlineData(Palette.Composed, "Considered", false)]
+    [InlineData(Palette.Still, "Still", true)]
+    [InlineData(Palette.Considered, null, false)]
+    [InlineData(Palette.Considered, "considered", false)] // case-sensitive: parameters are literal XAML text.
+    public void IsPaletteSelected_ForVariousPalettesAndParameters_ShouldMatchTheEnumNameExactly(
+        Palette selected, string? parameterText, bool expected)
+    {
+        // Arrange & Act
+        var isSelected = PresentationMath.IsPaletteSelected(selected, parameterText);
+
+        // Assert
+        isSelected.Should().Be(expected);
+    }
+
+    [Theory]
+    [InlineData(ThemeMode.Dark, "Dark", true)]
+    [InlineData(ThemeMode.Light, "Dark", false)]
+    [InlineData(ThemeMode.System, "System", true)]
+    [InlineData(ThemeMode.Dark, null, false)]
+    public void IsThemeModeSelected_ForVariousModesAndParameters_ShouldMatchTheEnumNameExactly(
+        ThemeMode selected, string? parameterText, bool expected)
+    {
+        // Arrange & Act
+        var isSelected = PresentationMath.IsThemeModeSelected(selected, parameterText);
+
+        // Assert
+        isSelected.Should().Be(expected);
     }
 }

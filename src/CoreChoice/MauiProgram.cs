@@ -28,6 +28,7 @@ public static class MauiProgram
             });
 
         builder.Services.AddSingleton<ThemeService>();
+        builder.Services.AddSingleton<IThemeStore>(sp => sp.GetRequiredService<ThemeService>());
 
         // The backend client. A typed HttpClient with a 60-second timeout, not the default 30 —
         // the decision endpoint calls a language model, and 30 seconds is not always enough.
@@ -88,9 +89,25 @@ public static class MauiProgram
         builder.Services.AddTransient<CoinsViewModel>();
         builder.Services.AddTransient<CoinsPage>();
 
+        // Appearance settings — the only screen that offers a palette or light/dark/system
+        // choice. Reached from the dilemma screen, never from onboarding.
+        builder.Services.AddTransient<SettingsViewModel>();
+        builder.Services.AddTransient<SettingsPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif
-        return builder.Build();
+        var app = builder.Build();
+
+        // EF Core never creates a SQLite file's tables on its own — only migrating or calling
+        // EnsureCreated does. Without this, the very first launch's very first query (from
+        // TestIntroViewModel.LoadAsync, before anything else has run) would fail against a
+        // schema-less database file with "no such table". A fresh install has zero rows, so this
+        // check is effectively instant; the composition root is the one place doing it
+        // synchronously is appropriate, since nothing can query the repository before it returns.
+        using (var db = app.Services.GetRequiredService<IDbContextFactory<LocalDbContext>>().CreateDbContext())
+            db.Database.EnsureCreated();
+
+        return app;
     }
 }

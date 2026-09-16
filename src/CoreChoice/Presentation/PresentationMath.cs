@@ -1,4 +1,5 @@
 using System.Globalization;
+using CoreChoice.Services;
 
 namespace CoreChoice.Presentation;
 
@@ -58,4 +59,17 @@ public static class PresentationMath
     /// <summary>True for a non-null, non-empty string. Backs the coin-grant banner's visibility on
     /// the profile screen.</summary>
     public static bool IsNotEmpty(string? value) => !string.IsNullOrEmpty(value);
+
+    /// <summary>True when <paramref name="selected"/>'s own enum name matches
+    /// <paramref name="parameterText"/> (e.g. <c>"Considered"</c>) — drives which row on the
+    /// appearance screen's palette list shows as checked, the same fixed-row shape
+    /// <c>CoinsViewModel</c> already uses for its three packs rather than one repeated template.
+    /// </summary>
+    public static bool IsPaletteSelected(Palette selected, string? parameterText) =>
+        parameterText is not null && string.Equals(selected.ToString(), parameterText, StringComparison.Ordinal);
+
+    /// <summary>Same comparison for the mode segmented control (<c>"Dark"</c>, <c>"Light"</c>,
+    /// <c>"System"</c>).</summary>
+    public static bool IsThemeModeSelected(ThemeMode selected, string? parameterText) =>
+        parameterText is not null && string.Equals(selected.ToString(), parameterText, StringComparison.Ordinal);
 }

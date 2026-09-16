@@ -40,6 +40,9 @@ public partial class DilemmaPage : ContentPage, IQueryAttributable
     private async void OnSpeakOptionBClicked(object? sender, EventArgs e) =>
         await _viewModel.DictateAsync(DilemmaField.OptionB);
 
+    private async void OnSettingsTapped(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync(nameof(SettingsPage));
+
     private async void OnChoosePersonaTapped(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync($"{nameof(PersonaPage)}?weight={_viewModel.Weight}");
 

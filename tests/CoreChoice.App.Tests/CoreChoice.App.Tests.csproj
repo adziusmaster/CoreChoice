@@ -57,5 +57,10 @@
          Platforms/Android is the only part that touches a MAUI/Android type, and stays untested
          here for exactly that reason, same as this app's converters. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\CoinsViewModel.cs" Link="Linked\CoinsViewModel.cs" />
+    <!-- Task 11: the appearance/settings screen. IThemeStore is ThemeService's MAUI-free surface
+         (ThemeService itself uses Preferences and Application.Current and cannot be linked), and
+         SettingsViewModel depends on that abstraction rather than the concrete service. -->
+    <Compile Include="..\..\src\CoreChoice\Services\IThemeStore.cs" Link="Linked\IThemeStore.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\SettingsViewModel.cs" Link="Linked\SettingsViewModel.cs" />
   </ItemGroup>
 </Project>

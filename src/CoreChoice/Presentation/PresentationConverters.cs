@@ -1,5 +1,6 @@
 using System.Globalization;
 using CoreChoice.Domain;
+using CoreChoice.Services;
 
 namespace CoreChoice.Presentation;
 
@@ -75,6 +76,47 @@ public sealed class IsNotEmptyConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         PresentationMath.IsNotEmpty(value as string);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>
+/// Turns a <c>"#RRGGBB"</c> string into a <see cref="Color"/> for a palette swatch on
+/// <c>SettingsPage</c> — <see cref="SettingsViewModel.Palettes"/>'s <c>GroundHex</c> and
+/// <c>AccentHex</c> are fixed reference colours for each palette's own preview, deliberately not
+/// <c>DynamicResource</c> tokens (a swatch that followed the current theme could never show what
+/// the *other* two palettes look like). This file uses <c>Color</c>, a MAUI type, so — like every
+/// other converter here — it cannot be linked into the test project; there is nothing to unit-test
+/// in a one-line call into MAUI's own <see cref="Microsoft.Maui.Graphics.Color.FromArgb(string)"/>.
+/// </summary>
+public sealed class HexColorConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is string hex ? Color.FromArgb(hex) : Colors.Transparent;
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>True when a bound <see cref="Palette"/> matches the converter parameter's name.
+/// Thin adapter over <see cref="PresentationMath.IsPaletteSelected"/>, the same shape as
+/// <see cref="LikertSelectedConverter"/> above.</summary>
+public sealed class PaletteSelectedConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is Palette selected && PresentationMath.IsPaletteSelected(selected, parameter as string);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        throw new NotSupportedException();
+}
+
+/// <summary>Same idea for the mode segmented control. Thin adapter over
+/// <see cref="PresentationMath.IsThemeModeSelected"/>.</summary>
+public sealed class ThemeModeSelectedConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture) =>
+        value is ThemeMode selected && PresentationMath.IsThemeModeSelected(selected, parameter as string);
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
