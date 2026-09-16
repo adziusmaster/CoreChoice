@@ -74,6 +74,13 @@ public static class MauiProgram
         builder.Services.AddTransient<AnalysisViewModel>();
         builder.Services.AddTransient<AnalysisPage>();
 
+        // The analyses/coins store. Real Google Play Billing on Android; buying itself is
+        // disabled for now (see CoinsViewModel's own doc) since there is no backend endpoint yet
+        // to redeem a purchase.
+        builder.Services.AddTransient<IBillingService, PlayBillingService>();
+        builder.Services.AddTransient<CoinsViewModel>();
+        builder.Services.AddTransient<CoinsPage>();
+
 #if DEBUG
         builder.Logging.AddDebug();
 #endif

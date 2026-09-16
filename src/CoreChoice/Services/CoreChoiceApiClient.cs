@@ -42,6 +42,26 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         return new GrantResult(dto.Granted, dto.Balance, dto.Reason);
     }
 
+    /// <summary>
+    /// Calls the not-yet-existing <c>POST /api/billing/redeem</c>. Today this always fails — the
+    /// server has no such route — which surfaces as an ordinary <see cref="HttpRequestException"/>
+    /// (404) that <c>CoinsViewModel.BuyAsync</c> already treats as "purchase not completed,
+    /// nothing consumed". Wired now so the only change needed once the endpoint ships is on the
+    /// server, not here.
+    /// </summary>
+    public async Task<GrantResult> RedeemPurchaseAsync(PurchaseTicket ticket, CancellationToken ct = default)
+    {
+        var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
+        var response = await SendAsync(HttpMethod.Post, "api/billing/redeem", new
+        {
+            deviceId,
+            productId = ticket.ProductId,
+            purchaseToken = ticket.PurchaseToken,
+        }, ct);
+        var dto = await ReadAsync<GrantDto>(response, ct);
+        return new GrantResult(dto.Granted, dto.Balance, dto.Reason);
+    }
+
     public async Task<IReadOnlyList<PersonaSummary>> GetPersonasAsync(CancellationToken ct = default)
     {
         var response = await SendAsync(HttpMethod.Get, "api/personas", body: null, ct);

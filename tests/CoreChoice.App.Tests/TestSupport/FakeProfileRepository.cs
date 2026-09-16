@@ -62,4 +62,7 @@ internal sealed class AlwaysThrowingCoinLedgerClient : ICoinLedgerClient
 
     public Task<GrantResult> ClaimProfileGrantAsync(CancellationToken ct = default) =>
         throw new HttpRequestException("no signal");
+
+    public Task<GrantResult> RedeemPurchaseAsync(PurchaseTicket ticket, CancellationToken ct = default) =>
+        throw new HttpRequestException("no signal");
 }

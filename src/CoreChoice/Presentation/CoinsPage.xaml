@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             x:Class="CoreChoice.Presentation.CoinsPage"
+             x:DataType="presentation:CoinsViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
+
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="Analyses"
+                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,8" />
+
+                <Label Text="One per question you ask. The personality test is always free."
+                       FontFamily="DMSans" FontSize="14" LineHeight="1.55"
+                       TextColor="{DynamicResource Muted}" Margin="0,0,0,28" />
+
+                <Border Style="{StaticResource CardBorder}" Padding="24" Margin="0,0,0,26">
+                    <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                        <Label Text="{Binding Balance}"
+                               FontFamily="Lora" FontSize="52" TextColor="{DynamicResource Accent}"
+                               HorizontalTextAlignment="Center" />
+                        <Label Text="remaining"
+                               FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Muted}"
+                               HorizontalTextAlignment="Center" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Label Text="ADD MORE" Style="{StaticResource MicroLabel}"
+                       TextColor="{DynamicResource Faint}" FontSize="12" Margin="0,0,0,12" />
+
+                <!-- PricesAreFromStore drives this notice directly: a placeholder price must never
+                     be shown as though it were a real one. Visible only when the store could not
+                     be reached — offline, billing unavailable, or the products not yet live. -->
+                <Border BackgroundColor="{DynamicResource SurfaceSunken}" Stroke="{DynamicResource LineSoft}"
+                        StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="14"
+                        IsVisible="{Binding ShowsPlaceholderPrices}" Margin="0,0,0,14">
+                    <Label Text="These are placeholder prices — Google Play could not be reached, so they are not what checkout would actually charge."
+                           FontFamily="DMSans" FontSize="12.5" LineHeight="1.5"
+                           TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" />
+                </Border>
+
+                <VerticalStackLayout Spacing="10" Margin="0,0,0,22">
+
+                    <!-- 10 analyses -->
+                    <Border Style="{StaticResource CardBorder}" Padding="18,16" MinimumHeightRequest="44"
+                            IsEnabled="{Binding CanBuy}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding CanBuy}" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBuyTenTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                <Label Text="{Binding TenAnalysesCount, StringFormat='{0} analyses'}"
+                                       FontFamily="DMSans" FontSize="16" TextColor="{DynamicResource Ink}" />
+                                <Label Text="About a month of ordinary use"
+                                       FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource Faint}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding TenDisplayPrice}"
+                                   FontFamily="Lora" FontSize="18" TextColor="{DynamicResource Ink}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 30 analyses — best value -->
+                    <Border Style="{StaticResource AccentCardBorder}" Padding="18,16" MinimumHeightRequest="44"
+                            IsEnabled="{Binding CanBuy}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding CanBuy}" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBuyThirtyTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                <HorizontalStackLayout Spacing="8">
+                                    <Label Text="{Binding ThirtyAnalysesCount, StringFormat='{0} analyses'}"
+                                           FontFamily="DMSans" FontSize="16" TextColor="{DynamicResource Ink}" />
+                                    <Border BackgroundColor="{DynamicResource Accent}" Padding="6,3"
+                                            StrokeShape="RoundRectangle 4" StrokeThickness="0"
+                                            VerticalOptions="Center">
+                                        <Label Text="BEST VALUE" FontFamily="DMSansBold" FontSize="10.5"
+                                               CharacterSpacing="0.6" TextColor="{DynamicResource AccentInk}" />
+                                    </Border>
+                                </HorizontalStackLayout>
+                                <Label Text="Works out at a third less each"
+                                       FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource AccentDim}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding ThirtyDisplayPrice}"
+                                   FontFamily="Lora" FontSize="18" TextColor="{DynamicResource Ink}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                    <!-- 100 analyses -->
+                    <Border Style="{StaticResource CardBorder}" Padding="18,16" MinimumHeightRequest="44"
+                            IsEnabled="{Binding CanBuy}">
+                        <Border.Triggers>
+                            <DataTrigger TargetType="Border" Binding="{Binding CanBuy}" Value="False">
+                                <Setter Property="Opacity" Value="0.55" />
+                            </DataTrigger>
+                        </Border.Triggers>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnBuyHundredTapped" />
+                        </Border.GestureRecognizers>
+                        <Grid ColumnDefinitions="*,Auto">
+                            <VerticalStackLayout Grid.Column="0" Spacing="3">
+                                <Label Text="{Binding HundredAnalysesCount, StringFormat='{0} analyses'}"
+                                       FontFamily="DMSans" FontSize="16" TextColor="{DynamicResource Ink}" />
+                                <Label Text="For a genuinely difficult year"
+                                       FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource Faint}" />
+                            </VerticalStackLayout>
+                            <Label Grid.Column="1" Text="{Binding HundredDisplayPrice}"
+                                   FontFamily="Lora" FontSize="18" TextColor="{DynamicResource Ink}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                    </Border>
+
+                </VerticalStackLayout>
+
+                <Label Text="{Binding Message}"
+                       IsVisible="{Binding Message, Converter={StaticResource IsNotEmptyConverter}}"
+                       FontFamily="DMSans" FontSize="13" LineHeight="1.5" TextColor="{DynamicResource Muted}"
+                       LineBreakMode="WordWrap" Margin="0,0,0,4" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- The line that answers the suspicion this whole category has earned: stays regardless
+             of whether buying is enabled. -->
+        <Border Grid.Row="1" BackgroundColor="{DynamicResource SurfaceSunken}" Stroke="{DynamicResource LineSoft}"
+                StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="16" Margin="0,12,0,0">
+            <Grid ColumnDefinitions="17,11,*">
+                <Border Grid.Column="0" WidthRequest="17" HeightRequest="17" StrokeShape="RoundRectangle 9"
+                        StrokeThickness="1.5" Stroke="{DynamicResource Faint}" BackgroundColor="Transparent"
+                        Padding="0" VerticalOptions="Start">
+                    <Label Text="i" FontFamily="DMSansBold" FontSize="11" TextColor="{DynamicResource Faint}"
+                           HorizontalOptions="Center" VerticalOptions="Center" HorizontalTextAlignment="Center" />
+                </Border>
+                <Label Grid.Column="2" Text="No subscription. Nothing renews. What you buy sits there until you use it."
+                       FontFamily="DMSans" FontSize="12.5" LineHeight="1.55" TextColor="{DynamicResource Faint}"
+                       LineBreakMode="WordWrap" />
+            </Grid>
+        </Border>
+
+    </Grid>
+</ContentPage>

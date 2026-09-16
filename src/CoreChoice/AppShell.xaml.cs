@@ -3,8 +3,9 @@ using CoreChoice.Presentation;
 namespace CoreChoice;
 
 /// <summary>
-/// Wires the personality-test flow (intro to <see cref="TestPage"/> to <see cref="ProfilePage"/>)
-/// and the ask-a-question flow (<see cref="DilemmaPage"/> to <see cref="PersonaPage"/> and back).
+/// Wires the personality-test flow (intro to <see cref="TestPage"/> to <see cref="ProfilePage"/>),
+/// the ask-a-question flow (<see cref="DilemmaPage"/> to <see cref="PersonaPage"/> and back), and
+/// the analyses/coins store (<see cref="CoinsPage"/>), reached from <see cref="AnalysisPage"/>.
 /// The root content is constructed here, not declared as a ShellContent DataTemplate in XAML,
 /// so <see cref="TestIntroPage"/> is guaranteed to come from the composition root's DI container
 /// (and so get its <see cref="TestIntroViewModel"/> by constructor injection) rather than from an
@@ -23,6 +24,7 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(DilemmaPage), typeof(DilemmaPage));
         Routing.RegisterRoute(nameof(PersonaPage), typeof(PersonaPage));
         Routing.RegisterRoute(nameof(AnalysisPage), typeof(AnalysisPage));
+        Routing.RegisterRoute(nameof(CoinsPage), typeof(CoinsPage));
 
         Items.Add(new ShellContent
         {

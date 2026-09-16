@@ -67,14 +67,11 @@ public partial class AnalysisPage : ContentPage, IQueryAttributable
     private async void OnSettledClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("//TestIntroPage");
 
-    /// <summary>
-    /// "Get more coins" — there is no coins screen wired into the app yet (only its design
-    /// artboard, <c>design/Coins.dc.html</c>, exists). Going back at least returns the person to a
-    /// screen they can act from, rather than a dead button; this is a placeholder to replace once
-    /// that screen is built.
-    /// </summary>
+    /// <summary>"Get more coins" — the analyses/coins store (artboard 8). Buying itself is
+    /// disabled there for now (see <see cref="CoinsViewModel"/>'s own doc), but the balance and
+    /// real Play Store prices are worth seeing regardless.</summary>
     private async void OnGetCoinsClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("..");
+        await Shell.Current.GoToAsync(nameof(CoinsPage));
 
     private async void OnChangeQuestionClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("..");
