@@ -9,6 +9,12 @@
 #
 # Deploy (from /opt/corechoice on the server):
 #   docker compose --env-file .env -f deploy/docker-compose.prod.yml up -d --build
+# Explicit project name. Without it Compose derives the project from the parent directory, which
+# is "deploy" for BOTH this stack and PurePrep's (/opt/pureprep/deploy) on this shared host. They
+# then collide: each sees the other's container as an orphan, and a single `--remove-orphans` run
+# from either directory would delete the neighbouring app's container.
+name: corechoice
+
 services:
   # Named "corechoice", NOT "web" or "api". Compose publishes the service name as a DNS alias on
   # the shared network, so a generic name silently hijacks a neighbouring stack's traffic. This
