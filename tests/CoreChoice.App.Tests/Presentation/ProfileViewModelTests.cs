@@ -108,4 +108,64 @@ public class ProfileViewModelTests
         repository.SaveProfileCallCount.Should().Be(1);
         vm.GrantMessage.Should().BeNull();
     }
+
+    public static TheoryData<Exception> LedgerFailures =>
+    [
+        new HttpRequestException("offline"),
+        new MalformedAdvisorResponseException("the response body was not valid JSON"),
+        new DecisionUnavailableException("The request timed out."),
+        new TimeoutException("the socket gave up"),
+        new InvalidOperationException("something nobody predicted"),
+    ];
+
+    [Theory]
+    [MemberData(nameof(LedgerFailures))]
+    public async Task LoadAsync_WhateverTheLedgerThrows_ShouldStillRenderTheFreeResult(Exception failure)
+    {
+        // Arrange — the free-test promise must not depend on WHICH failure the ledger produces.
+        // Every prior test here threw HttpRequestException alone, so narrowing the catch to that
+        // one type stayed green: the invariant was asserted for a single exception shape, which is
+        // how a too-narrow catch survives. This repo has already shipped three of those.
+        var repository = new FakeProfileRepository();
+        foreach (var item in IpipItemBank.Items)
+            await repository.SaveAnswerAsync(item.Number, 3);
+
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.ClaimProfileGrantAsync(default).ThrowsForAnyArgs(failure);
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert
+        vm.Profile.IsPresent.Should().BeTrue();
+        vm.Summary.Should().NotBeNullOrWhiteSpace();
+        vm.GrantMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task LoadAsync_WhenTheCallerCancels_ShouldNotSwallowTheCancellation()
+    {
+        // Arrange — the inverse guard. The catch is filtered on !ct.IsCancellationRequested, so a
+        // caller who navigates away gets a cancellation rather than a silently "successful" load.
+        // Without this, "catch everything" would look identical to the correct implementation.
+        var repository = new FakeProfileRepository();
+        foreach (var item in IpipItemBank.Items)
+            await repository.SaveAnswerAsync(item.Number, 3);
+
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        using var cts = new CancellationTokenSource();
+        ledger.ClaimProfileGrantAsync(default).ThrowsForAnyArgs(_ =>
+        {
+            cts.Cancel();
+            return new OperationCanceledException(cts.Token);
+        });
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        Func<Task> act = async () => await vm.LoadAsync(cts.Token);
+
+        // Assert
+        await act.Should().ThrowAsync<OperationCanceledException>();
+    }
 }

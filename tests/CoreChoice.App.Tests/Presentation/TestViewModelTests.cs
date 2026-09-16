@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using CoreChoice.Application;
 using CoreChoice.Data;
 using CoreChoice.Domain;
@@ -116,6 +117,53 @@ public class TestViewModelTests
     }
 
     [Fact]
+    public async Task CanAdvance_WithThePageOnlyPartlyAnswered_ShouldBeFalse()
+    {
+        // Arrange — the "Next three" control binds to this. If it went true on the first tap, a
+        // person could skip two items and reach the end with an unanswerable set.
+        var vm = new TestViewModel(new FakeProfileRepository());
+        await vm.LoadAsync();
+
+        // Act — one of the three.
+        await vm.AnswerAsync(vm.CurrentPage[0].Number, 3);
+
+        // Assert
+        vm.CanAdvance.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CanAdvance_WithEveryItemOnThePageAnswered_ShouldBeTrue()
+    {
+        // Arrange
+        var vm = new TestViewModel(new FakeProfileRepository());
+        await vm.LoadAsync();
+
+        // Act
+        foreach (var item in vm.CurrentPage.ToList())
+            await vm.AnswerAsync(item.Number, 3);
+
+        // Assert
+        vm.CanAdvance.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task CanAdvance_WithNoItemsLeft_ShouldBeFalse()
+    {
+        // Arrange — an empty page is the finished state, not an advanceable one.
+        var repository = new FakeProfileRepository();
+        foreach (var item in IpipItemBank.Items)
+            await repository.SaveAnswerAsync(item.Number, 3);
+        var vm = new TestViewModel(repository);
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert
+        vm.CurrentPage.Should().BeEmpty();
+        vm.CanAdvance.Should().BeFalse();
+    }
+
+    [Fact]
     public async Task Resume_AfterTwelveAnswersAndAFullRestart_ShouldLandOnItemThirteenWithThePreviousTwelveIntact()
     {
         // Arrange — a REAL file-backed SQLite database, not ":memory:": an in-memory connection
@@ -163,15 +211,77 @@ public class TestViewModelTests
         }
     }
 
-    /// <summary>A real <see cref="IDbContextFactory{TContext}"/> over a file path, so closing it
-    /// (and the connections it opened) truly discards nothing but what SQLite itself persisted.</summary>
+    [Fact]
+    public async Task Resume_WhenTheDatabaseFileIsDeletedBetweenRuns_ShouldNotStillReportTheAnswers()
+    {
+        // Arrange — a guard on the fixture, not on the app. The resume test above is only
+        // meaningful if losing the file actually loses the data; with connection pooling left on it
+        // did not, and the resume test passed with the file deleted. If this ever goes green again,
+        // the resume test has stopped proving persistence.
+        var dbPath = Path.Combine(Path.GetTempPath(), $"corechoice-resume-guard-{Guid.NewGuid():N}.db");
+        try
+        {
+            {
+                await using var firstFactory = new FileBackedContextFactory(dbPath);
+                IDbContextFactory<LocalDbContext> port = firstFactory;
+                await using (var db = await port.CreateDbContextAsync())
+                    await db.Database.EnsureCreatedAsync();
+
+                var repository = new SqliteProfileRepository(firstFactory);
+                var viewModel = new TestViewModel(repository);
+                await viewModel.LoadAsync();
+                for (var number = 1; number <= 12; number++)
+                    await viewModel.AnswerAsync(number, 3);
+            }
+
+            File.Delete(dbPath);
+
+            // Act
+            await using var secondFactory = new FileBackedContextFactory(dbPath);
+            var secondViewModel = new TestViewModel(new SqliteProfileRepository(secondFactory));
+            Func<Task> act = async () => await secondViewModel.LoadAsync();
+
+            // Assert — either it throws because the schema is gone, or it comes back empty. What it
+            // must never do is report the twelve answers that were deleted with the file.
+            try
+            {
+                await act();
+                secondViewModel.AnsweredCount.Should().Be(0,
+                    "the answers went away with the file; reporting them means a pooled connection "
+                    + "is still serving the old inode and the resume test is vacuous");
+            }
+            catch (SqliteException)
+            {
+                // The schema went with the file. Equally good evidence.
+            }
+        }
+        finally
+        {
+            if (File.Exists(dbPath)) File.Delete(dbPath);
+        }
+    }
+
+    /// <summary>
+    /// A real <see cref="IDbContextFactory{TContext}"/> over a file path, with connection pooling
+    /// OFF. Pooling defeats the whole point of this fixture: Microsoft.Data.Sqlite pools native
+    /// connections by connection string, so a "restarted" factory silently receives a pooled handle
+    /// still attached to the original inode. The test then passes even if the database file has
+    /// been deleted outright — proving nothing about persistence, which is all it exists to prove.
+    /// Disposing also clears the pool, so nothing leaks into the next test.
+    /// </summary>
     private sealed class FileBackedContextFactory(string dbPath) : IDbContextFactory<LocalDbContext>, IAsyncDisposable
     {
-        private readonly DbContextOptions<LocalDbContext> _options =
-            new DbContextOptionsBuilder<LocalDbContext>().UseSqlite($"Filename={dbPath}").Options;
+        private readonly string _connectionString = $"Filename={dbPath};Pooling=False";
 
-        public LocalDbContext CreateDbContext() => new(_options);
+        private DbContextOptions<LocalDbContext> Options =>
+            new DbContextOptionsBuilder<LocalDbContext>().UseSqlite(_connectionString).Options;
 
-        public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+        public LocalDbContext CreateDbContext() => new(Options);
+
+        public ValueTask DisposeAsync()
+        {
+            SqliteConnection.ClearPool(new SqliteConnection(_connectionString));
+            return ValueTask.CompletedTask;
+        }
     }
 }

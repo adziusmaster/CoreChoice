@@ -26,6 +26,21 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
     [ObservableProperty]
     private string? grantMessage;
 
+    /// <summary>
+    /// Renders the profile, scoring and saving it the first time if none is stored yet, then
+    /// claims the completion grant.
+    /// </summary>
+    /// <remarks>
+    /// <para><b>Precondition:</b> all fifty items must already be answered. Navigate here only once
+    /// <see cref="TestViewModel.AdvanceAsync"/> has returned <c>true</c>. Called earlier, this
+    /// throws <see cref="IncompleteProfileException"/> and does not catch it — scoring a partial set
+    /// would produce a profile that looks plausible and is quietly wrong, which is worse than a
+    /// loud failure. The page must not reach this screen speculatively.</para>
+    /// <para>Claiming the grant can fail in any way at all — no signal, a dead server, a rate limit,
+    /// a proxy returning HTML — and none of it may block the result. The personality test and its
+    /// full result are free, permanently; that promise is kept here structurally rather than
+    /// remembered, so the profile is rendered before the ledger is ever touched.</para>
+    /// </remarks>
     public async Task LoadAsync(CancellationToken ct = default)
     {
         var stored = await repository.LoadProfileAsync(ct);
