@@ -73,4 +73,21 @@ public partial class TestPage : ContentPage
         // leaving is simply a navigation, not a checkpoint.
         await Shell.Current.GoToAsync("..");
     }
+
+    /// <summary>
+    /// "How to answer" — one help affordance about the test in general, deliberately not fifty
+    /// per-item explainers. IPIP-50's validity depends on people answering each statement as
+    /// worded, on instinct; explaining what an item "really means" would bias the response, which
+    /// is exactly what the intro screen's own "answer quickly" guidance exists to avoid. This modal
+    /// only ever talks about how to use the 1-5 scale, never about what any specific item means.
+    /// </summary>
+    private async void OnHelpTapped(object? sender, EventArgs e) =>
+        await DisplayAlertAsync(
+            "How to answer",
+            "1 is very inaccurate, 5 is very accurate, and 3 is a genuine answer, not a dodge.\n\n" +
+            "Nothing here is graded, and there is no right response, only an honest one.\n\n" +
+            "Answer for how you usually are, not how you feel today and not how you would like to be.\n\n" +
+            "Go with your first instinct. It tends to read truer than a considered one.\n\n" +
+            "You can stop anywhere; it remembers exactly which question you were on.",
+            "Got it");
 }

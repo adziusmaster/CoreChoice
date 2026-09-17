@@ -40,6 +40,9 @@
     <!-- Task 7c: the display band and the local note composer, both MAUI-free. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\TraitDisplayBand.cs" Link="Linked\TraitDisplayBand.cs" />
     <Compile Include="..\..\src\CoreChoice\Presentation\ProfileNoteComposer.cs" Link="Linked\ProfileNoteComposer.cs" />
+    <!-- Task 14: the per-trait "how you decide" passages on the result screen, MAUI-free by design
+         like ProfileNoteComposer.cs above. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\ProfileTraitSummaryComposer.cs" Link="Linked\ProfileTraitSummaryComposer.cs" />
     <!-- Task 7d: the converters' maths, extracted so it is MAUI-free and therefore linkable —
          PresentationConverters.cs itself implements IValueConverter and uses Rect, so it cannot be. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\PresentationMath.cs" Link="Linked\PresentationMath.cs" />

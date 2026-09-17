@@ -29,6 +29,24 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
     [ObservableProperty]
     private string note = string.Empty;
 
+    // The fuller "how you decide" passage for each trait, built locally by
+    // ProfileTraitSummaryComposer from the score already on the phone — same no-signal-required
+    // guarantee as Note above, just one passage per trait instead of one sentence overall.
+    [ObservableProperty]
+    private string opennessSummary = string.Empty;
+
+    [ObservableProperty]
+    private string conscientiousnessSummary = string.Empty;
+
+    [ObservableProperty]
+    private string extraversionSummary = string.Empty;
+
+    [ObservableProperty]
+    private string agreeablenessSummary = string.Empty;
+
+    [ObservableProperty]
+    private string neuroticismSummary = string.Empty;
+
     [ObservableProperty]
     private int balance;
 
@@ -68,6 +86,11 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
         Profile = stored;
         Summary = BuildSummary(stored);
         Note = ProfileNoteComposer.Compose(stored);
+        OpennessSummary = ProfileTraitSummaryComposer.Compose(Trait.Openness, stored.Openness);
+        ConscientiousnessSummary = ProfileTraitSummaryComposer.Compose(Trait.Conscientiousness, stored.Conscientiousness);
+        ExtraversionSummary = ProfileTraitSummaryComposer.Compose(Trait.Extraversion, stored.Extraversion);
+        AgreeablenessSummary = ProfileTraitSummaryComposer.Compose(Trait.Agreeableness, stored.Agreeableness);
+        NeuroticismSummary = ProfileTraitSummaryComposer.Compose(Trait.Neuroticism, stored.Neuroticism);
 
         try
         {

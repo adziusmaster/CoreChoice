@@ -25,12 +25,21 @@
 
     <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="24,56,24,24">
 
-        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,2">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Margin="0,0,0,2">
             <Label Grid.Column="0"
                    Text="{Binding AnsweredCount, Converter={StaticResource TestPositionConverter}}"
                    FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Muted}"
                    MinimumHeightRequest="44" VerticalTextAlignment="Center" />
-            <Label x:Name="PauseLabel" Grid.Column="1"
+            <Label x:Name="HelpLabel" Grid.Column="1"
+                   Text="?"
+                   FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Faint}"
+                   MinimumHeightRequest="44" MinimumWidthRequest="44"
+                   VerticalTextAlignment="Center" HorizontalTextAlignment="Center">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnHelpTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+            <Label x:Name="PauseLabel" Grid.Column="2"
                    Text="Pause"
                    FontFamily="DMSans" FontSize="13" TextColor="{DynamicResource Faint}"
                    MinimumHeightRequest="44" MinimumWidthRequest="44"
