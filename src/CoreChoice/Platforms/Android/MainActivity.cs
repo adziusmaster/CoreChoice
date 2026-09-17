@@ -85,8 +85,13 @@ public class MainActivity : MauiAppCompatActivity
             if (v is null || insets is null)
                 return insets!;
 
+            // BOTH ends, not just the bottom. The app draws edge to edge, so without the top
+            // inset the page's own padding is measured from the screen edge and the first heading
+            // sits hard against the status bar. The bottom inset keeps the tab bar clear of the
+            // navigation bar; consuming the result below stops Material's BottomNavigationView
+            // applying that same bottom inset a second time to its own height.
             var bars = insets.GetInsets(WindowInsetsCompat.Type.SystemBars());
-            v.SetPadding(v.PaddingLeft, v.PaddingTop, v.PaddingRight, bars?.Bottom ?? 0);
+            v.SetPadding(v.PaddingLeft, bars?.Top ?? 0, v.PaddingRight, bars?.Bottom ?? 0);
 
             // Consumed, not the original insets: this view already turned the bottom system-bar
             // inset into padding above, and Shell's native bottom tab bar (a Material

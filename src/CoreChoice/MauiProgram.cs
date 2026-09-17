@@ -27,6 +27,20 @@ public static class MauiProgram
                 fonts.AddFont("DMSans-Bold.ttf", "DMSansBold");
             });
 
+        // Android draws its own focus underline under every Editor and Entry, tinted from the
+        // platform theme's accent — a blue that belongs to no palette in this app and does not
+        // follow a theme switch. The approved design has no underline under these fields at all;
+        // the card border already delimits them. So the platform drawable is removed rather than
+        // re-tinted, which also removes one more colour that would need keeping in sync.
+#if ANDROID
+        Microsoft.Maui.Handlers.EditorHandler.Mapper.AppendToMapping(
+            "CoreChoiceNoUnderline",
+            (handler, _) => handler.PlatformView.Background = null);
+        Microsoft.Maui.Handlers.EntryHandler.Mapper.AppendToMapping(
+            "CoreChoiceNoUnderline",
+            (handler, _) => handler.PlatformView.Background = null);
+#endif
+
         builder.Services.AddSingleton<ThemeService>();
         builder.Services.AddSingleton<IThemeStore>(sp => sp.GetRequiredService<ThemeService>());
 

@@ -31,14 +31,23 @@ public sealed partial class DilemmaViewModel(
 {
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanSubmit))]
+    [NotifyPropertyChangedFor(nameof(OptionACounter))]
+    [NotifyPropertyChangedFor(nameof(ShowOptionACounter))]
+    [NotifyPropertyChangedFor(nameof(OptionAIsOverLimit))]
     private string optionA = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanSubmit))]
+    [NotifyPropertyChangedFor(nameof(OptionBCounter))]
+    [NotifyPropertyChangedFor(nameof(ShowOptionBCounter))]
+    [NotifyPropertyChangedFor(nameof(OptionBIsOverLimit))]
     private string optionB = string.Empty;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(CanSubmit))]
+    [NotifyPropertyChangedFor(nameof(ContextCounter))]
+    [NotifyPropertyChangedFor(nameof(ShowContextCounter))]
+    [NotifyPropertyChangedFor(nameof(ContextIsOverLimit))]
     private string context = string.Empty;
 
     [ObservableProperty]
@@ -106,6 +115,33 @@ public sealed partial class DilemmaViewModel(
     /// constructor-time throw: an option one character over the limit must disable the button, not
     /// crash the screen the moment it happens.
     /// </summary>
+    // A counter that appears only near the limit, and never truncates. Silently cutting a paste
+    // decides FOR the person which words they lose, always from the end — which is where the
+    // qualifier that changes the meaning usually sits. Keeping every character and refusing to
+    // submit lets them choose what goes.
+    private const double CounterAppearsAt = 0.8;
+
+    public string OptionACounter => $"{OptionA.Trim().Length} / {Dilemma.MaxOptionLength}";
+
+    public string OptionBCounter => $"{OptionB.Trim().Length} / {Dilemma.MaxOptionLength}";
+
+    public string ContextCounter => $"{Context.Trim().Length} / {Dilemma.MaxContextLength}";
+
+    public bool ShowOptionACounter => NearLimit(OptionA, Dilemma.MaxOptionLength);
+
+    public bool ShowOptionBCounter => NearLimit(OptionB, Dilemma.MaxOptionLength);
+
+    public bool ShowContextCounter => NearLimit(Context, Dilemma.MaxContextLength);
+
+    public bool OptionAIsOverLimit => OptionA.Trim().Length > Dilemma.MaxOptionLength;
+
+    public bool OptionBIsOverLimit => OptionB.Trim().Length > Dilemma.MaxOptionLength;
+
+    public bool ContextIsOverLimit => Context.Trim().Length > Dilemma.MaxContextLength;
+
+    private static bool NearLimit(string value, int limit) =>
+        value.Trim().Length >= limit * CounterAppearsAt;
+
     public bool CanSubmit => IsValidOption(OptionA) && IsValidOption(OptionB) && IsValidContext(Context);
 
     private static bool IsValidOption(string value)
