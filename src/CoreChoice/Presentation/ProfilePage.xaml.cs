@@ -24,5 +24,5 @@ public partial class ProfilePage : ContentPage
     }
 
     private async void OnAskClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync(nameof(DilemmaPage));
+        await Shell.Current.GoToAsync($"//{nameof(DilemmaPage)}");
 }

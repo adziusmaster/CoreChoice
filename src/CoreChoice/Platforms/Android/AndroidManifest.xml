@@ -1,7 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-  <application android:allowBackup="true" android:supportsRtl="true" />
+  <!-- allowBackup is off deliberately: the fifty personality-test answers and the scored OCEAN
+       profile are stored in the local SQLite database, and Android's backup service would
+       otherwise copy that file off the device to Google Drive. The app's own intro screen and the
+       published privacy policy both promise "your answers stay on this phone. They are never sent
+       anywhere." — leaving backup on would make that promise false. -->
+  <application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" />
   <uses-permission android:name="android.permission.INTERNET" />
+  <!-- Required by Google Play Billing so in-app products / purchases work. Buying is disabled in
+       the app today (no redeem endpoint yet), but this must be in place before closed testing. -->
+  <uses-permission android:name="com.android.vending.BILLING" />
   <!-- Voice dictation for the dilemma fields. Requested at the moment the mic is tapped,
        never at launch: an app that asks for the microphone on first open gets denied. -->
   <uses-permission android:name="android.permission.RECORD_AUDIO" />

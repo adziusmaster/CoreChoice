@@ -55,5 +55,36 @@ public class TestIntroViewModelTests
         // Assert
         vm.HasExistingProfile.Should().BeTrue();
         vm.IsResuming.Should().BeFalse();
+        vm.ShouldShowProfile.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LoadAsync_WithAllItemsAnsweredButNoProfileScoredYet_ShouldNotShowProfile()
+    {
+        // Arrange — every item answered but ProfileViewModel.LoadAsync has never run, so no
+        // profile has been scored and saved yet. The Profile tab must still land on this screen,
+        // never speculatively on ProfilePage.
+        var repository = new FakeProfileRepository();
+        repository.SeedAnswers(IpipItemBank.Items.Select(i => new KeyValuePair<int, int>(i.Number, 3)));
+        var vm = new TestIntroViewModel(repository);
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert
+        vm.ShouldShowProfile.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task LoadAsync_OnAFreshInstall_ShouldNotShowProfile()
+    {
+        // Arrange
+        var vm = new TestIntroViewModel(new FakeProfileRepository());
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert
+        vm.ShouldShowProfile.Should().BeFalse();
     }
 }

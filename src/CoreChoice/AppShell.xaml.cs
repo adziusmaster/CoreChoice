@@ -4,67 +4,82 @@ using CoreChoice.Presentation;
 namespace CoreChoice;
 
 /// <summary>
-/// Wires the personality-test flow (intro to <see cref="TestPage"/> to <see cref="ProfilePage"/>),
-/// the ask-a-question flow (<see cref="DilemmaPage"/> to <see cref="PersonaPage"/> and back), the
-/// analyses/coins store (<see cref="CoinsPage"/>), reached from <see cref="AnalysisPage"/>, and
-/// appearance settings (<see cref="SettingsPage"/>), reached from <see cref="DilemmaPage"/>.
-/// The root content is constructed here, not declared as a ShellContent DataTemplate in XAML,
-/// so <see cref="TestIntroPage"/> is guaranteed to come from the composition root's DI container
-/// (and so get its <see cref="TestIntroViewModel"/> by constructor injection) rather than from an
-/// ambiguous Activator.CreateInstance path. The two pages pushed onto the stack afterwards go
-/// through Shell's own route registration, which is documented to resolve via DI when the type is
-/// registered in the service container.
+/// The bottom tab bar: <b>Ask</b> (<see cref="DilemmaPage"/>, the primary/default tab),
+/// <b>Profile</b> (<see cref="TestIntroPage"/>, which auto-navigates on to
+/// <see cref="ProfilePage"/> once it is safe to — see that page's own doc comment),
+/// <b>Analyses</b> (<see cref="CoinsPage"/>) and <b>Settings</b> (<see cref="SettingsPage"/>).
+/// The four tab roots are constructed here from the four injected instances, not declared as
+/// ShellContent DataTemplates in XAML, so each is guaranteed to come from the composition root's
+/// DI container (and so get its view model by constructor injection) rather than an ambiguous
+/// Activator.CreateInstance path — the same reasoning this class used for its single root page
+/// before tabs existed. <see cref="TestPage"/>, <see cref="ProfilePage"/>, <see cref="PersonaPage"/>
+/// and <see cref="AnalysisPage"/> stay ordinary routes, pushed onto whichever tab's own stack sent
+/// the person there, never tabs of their own.
 /// </summary>
 public partial class AppShell : Shell
 {
-    public AppShell(TestIntroPage introPage, IProfileRepository profiles)
+    public AppShell(
+        TestIntroPage introPage,
+        DilemmaPage dilemmaPage,
+        CoinsPage coinsPage,
+        SettingsPage settingsPage,
+        ICoinLedgerClient coinLedger)
     {
         InitializeComponent();
 
         Routing.RegisterRoute(nameof(TestPage), typeof(TestPage));
         Routing.RegisterRoute(nameof(ProfilePage), typeof(ProfilePage));
-        Routing.RegisterRoute(nameof(DilemmaPage), typeof(DilemmaPage));
         Routing.RegisterRoute(nameof(PersonaPage), typeof(PersonaPage));
         Routing.RegisterRoute(nameof(AnalysisPage), typeof(AnalysisPage));
-        Routing.RegisterRoute(nameof(CoinsPage), typeof(CoinsPage));
-        Routing.RegisterRoute(nameof(SettingsPage), typeof(SettingsPage));
 
-        Items.Add(new ShellContent
-        {
-            Route = nameof(TestIntroPage),
-            Content = introPage,
-        });
+        var tabs = new TabBar();
+        tabs.Items.Add(new ShellContent { Title = "Ask", Route = nameof(DilemmaPage), Content = dilemmaPage });
+        tabs.Items.Add(new ShellContent { Title = "Profile", Route = nameof(TestIntroPage), Content = introPage });
+        tabs.Items.Add(new ShellContent { Title = "Analyses", Route = nameof(CoinsPage), Content = coinsPage });
+        tabs.Items.Add(new ShellContent { Title = "Settings", Route = nameof(SettingsPage), Content = settingsPage });
+        Items.Add(tabs);
 
-        // Routing on launch: a first-time person lands on TestIntroPage (already the root above);
-        // a returning person who already has a scored profile is taken straight to the dilemma
-        // screen instead, since walking them back through "who are you when you have to decide?"
-        // a second time has nothing left to offer them. The test is still never a gate for anyone
-        // else — TestIntroPage's own "Not now, ask a question first" link covers the unprofiled
-        // path — this only shortens the *returning* path.
-        //
-        // Fire-and-forget from the constructor is deliberate and safe: LoadProfileAsync failing
-        // for any reason (freshest install, a locked file, a transient error) simply leaves
-        // TestIntroPage showing, which is exactly first-launch behaviour anyway. "//TestIntroPage/…"
-        // rather than a bare "//DilemmaPage" is used because DilemmaPage is only a global route
-        // (Routing.RegisterRoute above), not a ShellContent of its own — Shell resolves an
-        // absolute route's unmatched trailing segments by pushing them onto the matched
-        // ShellContent's stack, so this lands on DilemmaPage with TestIntroPage one "back" behind
-        // it, the same stack shape every other screen in this app already pushes onto.
-        _ = RouteReturningPersonToDilemmaAsync(profiles);
+        // First contact: seeds the free coins. Fire-and-forget from the constructor, the same
+        // shape this class previously used for its returning-person routing (now superseded by
+        // Ask simply being the default tab): never blocks first render, and a dead network or an
+        // unreachable backend simply leaves the balance wherever it already was — invisible and
+        // harmless, never a crash or a hang. Safe to call on every launch because the server is
+        // idempotent (see ICoinLedgerClient.EnsureSeededAsync's own doc comment).
+        _ = SeedFirstContactCoinsAsync(coinLedger);
     }
 
-    private async Task RouteReturningPersonToDilemmaAsync(IProfileRepository profiles)
+    private static async Task SeedFirstContactCoinsAsync(ICoinLedgerClient coinLedger)
     {
         try
         {
-            var profile = await profiles.LoadProfileAsync();
-            if (profile.IsPresent)
-                await GoToAsync($"//{nameof(TestIntroPage)}/{nameof(DilemmaPage)}");
+            await coinLedger.EnsureSeededAsync();
         }
         catch (Exception)
         {
-            // No stored profile yet (or the database could not be reached): TestIntroPage, already
-            // showing, is the correct screen for a first launch.
+            // No signal, a dead server, a cold start with nothing reachable yet — none of it may
+            // surface to the person. The balance simply stays whatever it last was.
         }
+    }
+
+    /// <summary>
+    /// The hardware back button: pops the current tab's own pushed-page stack when there is
+    /// something on it, otherwise returns to the primary Ask tab from any other tab's root, and
+    /// only exits the app from the Ask tab's own root — standard Android behaviour, and the one
+    /// case Shell's own default handling (which this defers to below) already gets right. The
+    /// actual decision is <see cref="BackNavigation.Decide"/>, a MAUI-free pure function so it can
+    /// be unit tested; this override is only the thin adapter reading Shell's live state.
+    /// </summary>
+    protected override bool OnBackButtonPressed()
+    {
+        var canPop = Navigation.NavigationStack.Count > 0;
+        var isOnPrimaryTab = CurrentItem?.CurrentItem?.CurrentItem?.Route == nameof(DilemmaPage);
+
+        if (BackNavigation.Decide(canPop, isOnPrimaryTab) == BackNavigationAction.GoToPrimaryTab)
+        {
+            _ = GoToAsync($"//{nameof(DilemmaPage)}");
+            return true;
+        }
+
+        return base.OnBackButtonPressed();
     }
 }

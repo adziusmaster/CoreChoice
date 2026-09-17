@@ -4,10 +4,9 @@ namespace CoreChoice.Presentation;
 
 /// <summary>
 /// "Appearance" (artboard 9) — the only screen in the app where a palette or light/dark/system
-/// choice can be made. Reached from a small settings affordance on <see cref="DilemmaPage"/>, the
-/// screen a returning person actually lands on; it is never offered during onboarding, so someone
-/// who came here because choice exhausts them is not asked a six-way appearance question before
-/// they have used the app once.
+/// choice can be made. Its own bottom tab (Settings), rather than a small affordance tucked into
+/// another screen; it is never offered during onboarding, so someone who came here because choice
+/// exhausts them is not asked a six-way appearance question before they have used the app once.
 /// </summary>
 public partial class SettingsPage : ContentPage
 {

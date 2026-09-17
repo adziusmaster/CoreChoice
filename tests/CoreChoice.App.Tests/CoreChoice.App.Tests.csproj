@@ -62,5 +62,8 @@
          SettingsViewModel depends on that abstraction rather than the concrete service. -->
     <Compile Include="..\..\src\CoreChoice\Services\IThemeStore.cs" Link="Linked\IThemeStore.cs" />
     <Compile Include="..\..\src\CoreChoice\Presentation\SettingsViewModel.cs" Link="Linked\SettingsViewModel.cs" />
+    <!-- Task 12: the pure decision behind AppShell's hardware-back-button handling and the bottom
+         tab bar, both MAUI-free by design. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\BackNavigation.cs" Link="Linked\BackNavigation.cs" />
   </ItemGroup>
 </Project>

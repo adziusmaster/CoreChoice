@@ -59,19 +59,17 @@ public partial class AnalysisPage : ContentPage, IQueryAttributable
         _viewModel.ToggleBothSides();
 
     /// <summary>
-    /// "That settles it" — the flow is complete. The analysis/history screen this would naturally
-    /// return to does not exist yet (out of this task's scope, same placeholder situation
-    /// <see cref="DilemmaPage.OnThinkItThroughClicked"/> was already in), so this returns to the
-    /// safest known-good screen until one does.
+    /// "That settles it" — the flow is complete. Returns to the Ask tab (the primary tab) to
+    /// start a fresh question, now that the bottom tab bar makes that the obvious "home".
     /// </summary>
     private async void OnSettledClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync("//TestIntroPage");
+        await Shell.Current.GoToAsync($"//{nameof(DilemmaPage)}");
 
-    /// <summary>"Get more coins" — the analyses/coins store (artboard 8). Buying itself is
-    /// disabled there for now (see <see cref="CoinsViewModel"/>'s own doc), but the balance and
-    /// real Play Store prices are worth seeing regardless.</summary>
+    /// <summary>"Get more coins" — switches to the Analyses tab (<see cref="CoinsPage"/>).
+    /// Buying itself is disabled there for now (see <see cref="CoinsViewModel"/>'s own doc), but
+    /// the balance and real Play Store prices are worth seeing regardless.</summary>
     private async void OnGetCoinsClicked(object? sender, EventArgs e) =>
-        await Shell.Current.GoToAsync(nameof(CoinsPage));
+        await Shell.Current.GoToAsync($"//{nameof(CoinsPage)}");
 
     private async void OnChangeQuestionClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync("..");
