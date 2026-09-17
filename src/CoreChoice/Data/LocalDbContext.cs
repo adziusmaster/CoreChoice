@@ -33,6 +33,46 @@ internal sealed class ProfileRow
     public DateTimeOffset ScoredAt { get; set; }
 }
 
+
+/// <summary>
+/// One answered decision, kept on the device for as long as the person keeps the app. The three
+/// list-shaped parts of an analysis (the reasoning, and each option's strengths and risks) are held
+/// as JSON in a single column rather than in child tables: they are only ever read and written
+/// whole, never queried across, and three extra tables would buy nothing but joins.
+/// </summary>
+internal sealed class DecisionRow
+{
+    public long Id { get; set; }
+
+    public string OptionA { get; set; } = string.Empty;
+
+    public string OptionB { get; set; } = string.Empty;
+
+    public string? Context { get; set; }
+
+    public string PersonaId { get; set; } = string.Empty;
+
+    public int Weight { get; set; }
+
+    public string Recommendation { get; set; } = string.Empty;
+
+    public int Confidence { get; set; }
+
+    /// <summary>The reasoning points, as a JSON array of strings.</summary>
+    public string ReasoningJson { get; set; } = "[]";
+
+    /// <summary>Option A's strengths and risks, as a JSON object.</summary>
+    public string OptionAJson { get; set; } = "{}";
+
+    public string OptionBJson { get; set; } = "{}";
+
+    public string PersonalityNote { get; set; } = string.Empty;
+
+    public bool IsPersonalized { get; set; }
+
+    public DateTimeOffset AskedAt { get; set; }
+}
+
 /// <summary>
 /// On-device storage for the personality test. No MAUI types belong here: the database path is
 /// supplied by the caller through <see cref="DbContextOptions{TContext}"/>, so this class (and the
@@ -43,6 +83,8 @@ internal sealed class LocalDbContext(DbContextOptions<LocalDbContext> options) :
     public DbSet<AnswerRow> Answers => Set<AnswerRow>();
 
     public DbSet<ProfileRow> Profiles => Set<ProfileRow>();
+
+    public DbSet<DecisionRow> Decisions => Set<DecisionRow>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -59,6 +101,15 @@ internal sealed class LocalDbContext(DbContextOptions<LocalDbContext> options) :
         {
             e.HasKey(x => x.Id);
             e.Property(x => x.ScoredAt).HasConversion(Ticks.To, Ticks.From);
+        });
+
+        b.Entity<DecisionRow>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Id).ValueGeneratedOnAdd();
+            e.Property(x => x.AskedAt).HasConversion(Ticks.To, Ticks.From);
+            // History is listed newest-first on every visit, so the sort is the access pattern.
+            e.HasIndex(x => x.AskedAt);
         });
     }
 
