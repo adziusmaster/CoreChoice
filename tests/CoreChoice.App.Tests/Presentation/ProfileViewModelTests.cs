@@ -34,6 +34,56 @@ public class ProfileViewModelTests
     }
 
     [Fact]
+    public async Task LoadAsync_ShouldSplitTheTraitPassagesIntoTheTwoTiersWithoutMixingThem()
+    {
+        // Arrange — high openness, low conscientiousness, moderate extraversion, high
+        // agreeableness, low neuroticism: three cells the research supports, two it does not.
+        var repository = new FakeProfileRepository();
+        await repository.SaveProfileAsync(new OceanProfile(
+            TraitScore.From(90), TraitScore.From(10), TraitScore.From(50),
+            TraitScore.From(90), TraitScore.From(10)));
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.ClaimProfileGrantAsync(default).ReturnsForAnyArgs(new GrantResult(false, 10, null));
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert — the screen renders these as two headed groups, so an interpretive passage
+        // leaking into the evidence list is the failure this guards against.
+        vm.EvidencePassages.Select(p => p.Trait).Should().Equal(Trait.Openness, Trait.Conscientiousness);
+        vm.InterpretedPassages.Select(p => p.Trait).Should()
+            .Equal(Trait.Extraversion, Trait.Agreeableness, Trait.Neuroticism);
+        vm.EvidencePassages.Should().OnlyContain(p => p.Tier == PassageTier.Established);
+        vm.InterpretedPassages.Should().OnlyContain(p => p.Tier == PassageTier.Interpretation);
+        vm.HasEvidencePassages.Should().BeTrue();
+        vm.HasInterpretedPassages.Should().BeTrue();
+    }
+
+    [Fact]
+    public async Task LoadAsync_ForAnEntirelyModerateProfile_ShouldShowNoEvidenceGroupAtAll()
+    {
+        // Arrange — nothing in the research describes mid-scorers, so the evidence group is empty
+        // and the page hides its heading rather than standing it over nothing.
+        var repository = new FakeProfileRepository();
+        await repository.SaveProfileAsync(new OceanProfile(
+            TraitScore.From(50), TraitScore.From(50), TraitScore.From(50),
+            TraitScore.From(50), TraitScore.From(50)));
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.ClaimProfileGrantAsync(default).ReturnsForAnyArgs(new GrantResult(false, 10, null));
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        await vm.LoadAsync();
+
+        // Assert
+        vm.EvidencePassages.Should().BeEmpty();
+        vm.HasEvidencePassages.Should().BeFalse();
+        vm.InterpretedPassages.Should().HaveCount(5);
+        vm.HasInterpretedPassages.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task LoadAsync_WhenAProfileIsAlreadySaved_ShouldNotRescoreOrResave()
     {
         // Arrange — a retake-free load: the profile already exists on disk.

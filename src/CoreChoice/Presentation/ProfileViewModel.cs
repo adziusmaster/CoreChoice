@@ -29,23 +29,33 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
     [ObservableProperty]
     private string note = string.Empty;
 
-    // The fuller "how you decide" passage for each trait, built locally by
-    // ProfileTraitSummaryComposer from the score already on the phone — same no-signal-required
-    // guarantee as Note above, just one passage per trait instead of one sentence overall.
+    /// <summary>
+    /// The per-trait "how you decide" passages that a large study actually supports, built locally
+    /// by <see cref="ProfileTraitSummaryComposer"/> from the score already on the phone — same
+    /// no-signal-required guarantee as <see cref="Note"/> above.
+    /// </summary>
+    /// <remarks>
+    /// Split from <see cref="InterpretedPassages"/> rather than badged inline, because the screen
+    /// renders the two lists under two headings and a reader has to be able to tell which tier they
+    /// are in without reading closely. Which traits land in which list depends on the profile: a
+    /// score can be established at one end of a scale and pure interpretation in the middle, so
+    /// either list may legitimately come back empty and the page hides the heading when it does.
+    /// </remarks>
     [ObservableProperty]
-    private string opennessSummary = string.Empty;
+    private IReadOnlyList<TraitPassage> evidencePassages = [];
+
+    /// <summary>
+    /// The per-trait passages where nothing is established: one way to read the score, or a fact
+    /// about people in general. Never mixed into <see cref="EvidencePassages"/>.
+    /// </summary>
+    [ObservableProperty]
+    private IReadOnlyList<TraitPassage> interpretedPassages = [];
 
     [ObservableProperty]
-    private string conscientiousnessSummary = string.Empty;
+    private bool hasEvidencePassages;
 
     [ObservableProperty]
-    private string extraversionSummary = string.Empty;
-
-    [ObservableProperty]
-    private string agreeablenessSummary = string.Empty;
-
-    [ObservableProperty]
-    private string neuroticismSummary = string.Empty;
+    private bool hasInterpretedPassages;
 
     [ObservableProperty]
     private int balance;
@@ -86,11 +96,11 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
         Profile = stored;
         Summary = BuildSummary(stored);
         Note = ProfileNoteComposer.Compose(stored);
-        OpennessSummary = ProfileTraitSummaryComposer.Compose(Trait.Openness, stored.Openness);
-        ConscientiousnessSummary = ProfileTraitSummaryComposer.Compose(Trait.Conscientiousness, stored.Conscientiousness);
-        ExtraversionSummary = ProfileTraitSummaryComposer.Compose(Trait.Extraversion, stored.Extraversion);
-        AgreeablenessSummary = ProfileTraitSummaryComposer.Compose(Trait.Agreeableness, stored.Agreeableness);
-        NeuroticismSummary = ProfileTraitSummaryComposer.Compose(Trait.Neuroticism, stored.Neuroticism);
+        var passages = ProfileTraitSummaryComposer.ComposeAll(stored);
+        EvidencePassages = passages.Where(p => p.Tier == PassageTier.Established).ToArray();
+        InterpretedPassages = passages.Where(p => p.Tier == PassageTier.Interpretation).ToArray();
+        HasEvidencePassages = EvidencePassages.Count > 0;
+        HasInterpretedPassages = InterpretedPassages.Count > 0;
 
         try
         {

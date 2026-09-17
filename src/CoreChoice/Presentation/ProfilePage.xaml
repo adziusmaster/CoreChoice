@@ -106,55 +106,56 @@
                            TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
                 </Border>
 
-                <Label Text="HOW YOU DECIDE" Style="{StaticResource MicroLabel}"
-                       TextColor="{DynamicResource Accent}" Margin="0,0,0,12" />
+                <!-- Two groups, not one list with badges. Which trait lands in which group
+                     depends on the score, so both are data-driven and either can be empty: a
+                     profile that is moderate on everything has no established passages at all,
+                     and the heading disappears with them rather than standing over nothing. -->
+                <VerticalStackLayout Spacing="10" Margin="0,0,0,18" IsVisible="{Binding HasEvidencePassages}">
 
-                <VerticalStackLayout Spacing="10" Margin="0,0,0,14">
+                    <Label Text="WHAT RESEARCH SUPPORTS" Style="{StaticResource MicroLabel}"
+                           TextColor="{DynamicResource Accent}" />
+                    <Label Text="From large studies, at the strength those studies actually found."
+                           FontFamily="DMSans" FontSize="13" LineHeight="1.5"
+                           TextColor="{DynamicResource Muted}" Margin="0,0,0,2" LineBreakMode="WordWrap" />
 
-                    <Border Style="{StaticResource CardBorder}" Padding="16,14">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Openness" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
-                            <Label Text="{Binding OpennessSummary}"
-                                   FontFamily="Lora" FontSize="15" LineHeight="1.55"
-                                   TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                    </Border>
+                    <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding EvidencePassages}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="presentation:TraitPassage">
+                                <Border Style="{StaticResource CardBorder}" Padding="16,14">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Text="{Binding TraitName}" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
+                                        <Label Text="{Binding Text}"
+                                               FontFamily="Lora" FontSize="15" LineHeight="1.55"
+                                               TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
 
-                    <Border Style="{StaticResource CardBorder}" Padding="16,14">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Conscientiousness" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
-                            <Label Text="{Binding ConscientiousnessSummary}"
-                                   FontFamily="Lora" FontSize="15" LineHeight="1.55"
-                                   TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                    </Border>
+                </VerticalStackLayout>
 
-                    <Border Style="{StaticResource CardBorder}" Padding="16,14">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Extraversion" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
-                            <Label Text="{Binding ExtraversionSummary}"
-                                   FontFamily="Lora" FontSize="15" LineHeight="1.55"
-                                   TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                    </Border>
+                <VerticalStackLayout Spacing="10" Margin="0,0,0,14" IsVisible="{Binding HasInterpretedPassages}">
 
-                    <Border Style="{StaticResource CardBorder}" Padding="16,14">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Agreeableness" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
-                            <Label Text="{Binding AgreeablenessSummary}"
-                                   FontFamily="Lora" FontSize="15" LineHeight="1.55"
-                                   TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                    </Border>
+                    <Label Text="ONE WAY TO READ THE REST" Style="{StaticResource MicroLabel}" />
+                    <Label Text="Nothing below is established. It is one reading of the score, or a fact about people in general — not something measured about you."
+                           FontFamily="DMSans" FontSize="13" LineHeight="1.5"
+                           TextColor="{DynamicResource Muted}" Margin="0,0,0,2" LineBreakMode="WordWrap" />
 
-                    <Border Style="{StaticResource CardBorder}" Padding="16,14">
-                        <VerticalStackLayout Spacing="6">
-                            <Label Text="Neuroticism" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Ink}" />
-                            <Label Text="{Binding NeuroticismSummary}"
-                                   FontFamily="Lora" FontSize="15" LineHeight="1.55"
-                                   TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
-                        </VerticalStackLayout>
-                    </Border>
+                    <VerticalStackLayout Spacing="10" BindableLayout.ItemsSource="{Binding InterpretedPassages}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="presentation:TraitPassage">
+                                <Border Style="{StaticResource CardBorder}" Padding="16,14">
+                                    <VerticalStackLayout Spacing="6">
+                                        <Label Text="{Binding TraitName}" FontFamily="DMSansMedium" FontSize="13" TextColor="{DynamicResource Muted}" />
+                                        <Label Text="{Binding Text}"
+                                               FontFamily="Lora" FontSize="15" LineHeight="1.55"
+                                               TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
 
                 </VerticalStackLayout>
 
