@@ -49,6 +49,29 @@ public class MainActivity : MauiAppCompatActivity
         ViewCompat.SetOnApplyWindowInsetsListener(content, new SystemBarsBottomInsetListener());
     }
 
+    /// <summary>
+    /// The first time <see cref="CoreChoice.Services.ThemeService.Apply"/> switches the app into
+    /// dark mode (Settings default to a light-resolving choice, so this is the cold-start case for
+    /// anyone who picks Dark, or the device's own dark mode for ThemeMode.System), setting
+    /// <c>Application.UserAppTheme</c> flips this activity's own night-mode resources. Because
+    /// MainActivity declares <see cref="ConfigChanges.UiMode"/> above, Android does not recreate
+    /// the activity for that — instead AppCompatActivity's own onConfigurationChanged handling
+    /// (invoked from inside <c>base.OnConfigurationChanged</c> below) re-resolves the theme against
+    /// the new night qualifier and, as part of that, resets the window's background drawable back
+    /// to the theme's own default windowBackground — Android's stock Material dark surface,
+    /// <c>#121212</c> — even though <see cref="SystemBarAppearance.Apply"/> had already painted the
+    /// real palette colour moments earlier in the same call stack. This is exactly the documented
+    /// AppCompatDelegate caveat: an activity that opts out of recreation for uiMode changes must
+    /// manually redo anything theme-dependent itself. Re-painting here, once that settles, is what
+    /// makes the system navigation band show the palette's actual Bg in dark mode instead of that
+    /// default.
+    /// </summary>
+    public override void OnConfigurationChanged(global::Android.Content.Res.Configuration newConfig)
+    {
+        base.OnConfigurationChanged(newConfig);
+        CoreChoice.Platforms.Android.SystemBarAppearance.Reapply();
+    }
+
     private sealed class SystemBarsBottomInsetListener : Java.Lang.Object, IOnApplyWindowInsetsListener
     {
         public WindowInsetsCompat OnApplyWindowInsets(global::Android.Views.View? v, WindowInsetsCompat? insets)
@@ -58,7 +81,15 @@ public class MainActivity : MauiAppCompatActivity
 
             var bars = insets.GetInsets(WindowInsetsCompat.Type.SystemBars());
             v.SetPadding(v.PaddingLeft, v.PaddingTop, v.PaddingRight, bars?.Bottom ?? 0);
-            return insets;
+
+            // Consumed, not the original insets: this view already turned the bottom system-bar
+            // inset into padding above, and Shell's native bottom tab bar (a Material
+            // BottomNavigationView) applies that same bottom inset to itself automatically the
+            // moment it sees one during dispatch — that's what inflated it to roughly natural
+            // height plus a second full nav-bar inset. Returning WindowInsetsCompat.Consumed stops
+            // the inset from reaching any descendant a second time, so the tab bar renders at its
+            // own natural height instead of double-padded.
+            return WindowInsetsCompat.Consumed;
         }
     }
 }
