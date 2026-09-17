@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CoreChoice.Presentation.Controls.PageShell">
+
+    <!--
+      The one shell every page's Content adopts, so the outer padding, the scroll behaviour and
+      the page background are a single decision instead of eight repeated ones.
+
+      RootGrid's Padding is "24, TopPadding, 24, 24" — left/right/bottom are fixed at 24 for every
+      page; only the top inset is a settable property, and only because one page (see TestPage's
+      comment) genuinely needs a different value; every other page takes the 60px default.
+
+      This sits INSIDE the inset already applied natively: MainActivity's window-insets listener
+      pads the whole content view by the status-bar/navigation-bar insets before this Padding ever
+      runs, so RootGrid's top padding is pure page whitespace, not a second inset.
+    -->
+    <Grid x:Name="RootGrid" RowDefinitions="Auto,*,Auto" BackgroundColor="{DynamicResource Bg}">
+
+        <ContentView x:Name="HeaderHost" Grid.Row="0" />
+
+        <ScrollView Grid.Row="1" VerticalScrollBarVisibility="Never">
+            <ContentView x:Name="MainHost" />
+        </ScrollView>
+
+        <ContentView x:Name="FooterHost" Grid.Row="2" />
+
+    </Grid>
+</ContentView>

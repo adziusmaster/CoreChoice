@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="CoreChoice.Presentation.Controls.ConfirmationDialog"
+             x:Name="Root"
+             IsVisible="False">
+
+    <!--
+      A themed stand-in for DisplayAlertAsync, which renders Android's stock Material dialog —
+      wrong typeface, wrong colours, no idea the app's palette exists. Every colour here is a
+      DynamicResource; every font is one of the six registered aliases.
+
+      The two buttons are ordinary Styles, not one Button whose colour flips through a Trigger or
+      VisualState — see SettingsPage.xaml's mode buttons for why that form goes stale across a
+      ThemeService palette swap (commit 10e72c4). There is nothing here that needs the
+      mutually-exclusive-elements pattern those use, because neither button's colour ever changes
+      after it is first shown — only IsVisible on the whole control ever toggles, and that is a
+      plain property, not a trigger setter.
+
+      The destructive action (DestructiveButton) is deliberately the quieter, outlined button, and
+      it is *not* the button under a thumb resting at the bottom-right of a normal-size phone —
+      SafeButton, the one a careless tap should land on, takes that spot and the filled/prominent
+      styling.
+    -->
+    <Grid>
+
+        <!-- Scrim: tapping it is the same as Cancel — the dialog must be dismissable without
+             touching either button. -->
+        <BoxView Color="{DynamicResource Scrim}">
+            <BoxView.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnScrimTapped" />
+            </BoxView.GestureRecognizers>
+        </BoxView>
+
+        <Border BackgroundColor="{DynamicResource Surface}" Stroke="{DynamicResource Line}"
+                StrokeThickness="1" StrokeShape="RoundRectangle 16"
+                Padding="24,26,24,24" Margin="28"
+                HorizontalOptions="Fill" VerticalOptions="Center"
+                MaximumWidthRequest="420">
+            <VerticalStackLayout Spacing="18">
+
+                <VerticalStackLayout Spacing="10">
+                    <Label x:Name="TitleLabel"
+                           FontFamily="LoraSemiBold" FontSize="21" LineHeight="1.25"
+                           TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap" />
+                    <Label x:Name="MessageLabel"
+                           FontFamily="DMSans" FontSize="14.5" LineHeight="1.55"
+                           TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
+                </VerticalStackLayout>
+
+                <VerticalStackLayout Spacing="10">
+                    <Button x:Name="SafeButton" Style="{StaticResource PrimaryButton}"
+                            MinimumHeightRequest="44" Clicked="OnSafeClicked" />
+                    <Button x:Name="DestructiveButton" Style="{StaticResource SecondaryButton}"
+                            MinimumHeightRequest="44" Clicked="OnDestructiveClicked" />
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </Border>
+
+    </Grid>
+</ContentView>

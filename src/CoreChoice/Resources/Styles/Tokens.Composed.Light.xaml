@@ -18,4 +18,5 @@
   <Color x:Key="InkSoft">#2C3540</Color>
   <Color x:Key="Muted">#5A6673</Color>
   <Color x:Key="Faint">#8C96A2</Color>
+  <Color x:Key="Scrim">#AA000000</Color>
 </ResourceDictionary>

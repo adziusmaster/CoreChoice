@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
              x:Class="CoreChoice.Presentation.AnalysisPage"
              x:DataType="presentation:AnalysisViewModel"
              Style="{StaticResource PageStyle}"
@@ -13,9 +14,8 @@
         <presentation:LoadingView IsVisible="{Binding IsWorking}" />
 
         <!-- Artboard 7 · The answer -->
-        <Grid RowDefinitions="*,Auto" Padding="24,60,24,24" IsVisible="{Binding HasAnalysis}">
-
-            <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+        <controls:PageShell IsVisible="{Binding HasAnalysis}">
+        <controls:PageShell.MainContent>
                 <VerticalStackLayout Spacing="0">
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
@@ -135,9 +135,10 @@
                     </VerticalStackLayout>
 
                 </VerticalStackLayout>
-            </ScrollView>
+        </controls:PageShell.MainContent>
 
-            <VerticalStackLayout Grid.Row="1" Spacing="16" Margin="0,12,0,0">
+        <controls:PageShell.Footer>
+            <VerticalStackLayout Spacing="16" Margin="0,12,0,0">
                 <Label Text="You can sit with this. It will be here in the morning."
                        FontFamily="Lora" FontAttributes="Italic" FontSize="14" LineHeight="1.55"
                        TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" />
@@ -148,10 +149,16 @@
                             Clicked="OnSettledClicked" />
                 </Grid>
             </VerticalStackLayout>
+        </controls:PageShell.Footer>
+        </controls:PageShell>
 
-        </Grid>
-
-        <!-- Error state: no artboard covers this — see AnalysisPage.xaml.cs doc comment. -->
+        <!-- Error state: no artboard covers this — see AnalysisPage.xaml.cs doc comment. Deliberately
+             NOT PageShell: this content centers vertically in whatever space is available (short
+             error text should sit in the middle of the screen, not pinned to the top), which needs
+             a Grid "*" row's own centering, not ScrollView's shrink-to-content sizing — PageShell's
+             MainContent always sits inside a ScrollView, which has no extra space to center within.
+             The 24/60/24/24 padding below is hand-kept identical to PageShell's own numbers; if
+             that default ever changes, change it here too. -->
         <Grid RowDefinitions="*,Auto" Padding="24,60,24,24" IsVisible="{Binding HasError}">
             <VerticalStackLayout Grid.Row="0" Spacing="16" VerticalOptions="Center">
                 <Label Text="{Binding ErrorMessage}"

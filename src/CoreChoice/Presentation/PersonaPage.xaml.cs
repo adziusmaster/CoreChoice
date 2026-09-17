@@ -51,6 +51,13 @@ public partial class PersonaPage : ContentPage, IQueryAttributable
             await ReturnWithAsync(persona);
     }
 
+    /// <summary>The visible way back the owner asked for: returns to <see cref="DilemmaPage"/>
+    /// exactly as the system back button already does, with no SelectedPersona query parameter —
+    /// so the persona choice DilemmaPage is currently holding, and its weight, are both left
+    /// untouched.</summary>
+    private async void OnBackTapped(object? sender, EventArgs e) =>
+        await Shell.Current.GoToAsync("..");
+
     private static Task ReturnWithAsync(PersonaSummary persona) =>
         Shell.Current.GoToAsync("..", new Dictionary<string, object> { ["SelectedPersona"] = persona });
 }

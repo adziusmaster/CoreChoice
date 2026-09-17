@@ -2,14 +2,15 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
              x:Class="CoreChoice.Presentation.ProfilePage"
              x:DataType="presentation:ProfileViewModel"
              Style="{StaticResource PageStyle}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto" Padding="24,52,24,24">
-
-        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+    <Grid>
+    <controls:PageShell>
+        <controls:PageShell.MainContent>
             <VerticalStackLayout Spacing="0">
 
                 <Label Text="This is how you tend to decide."
@@ -171,25 +172,32 @@
                 </Border>
 
             </VerticalStackLayout>
-        </ScrollView>
+        </controls:PageShell.MainContent>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
-            <Label FontFamily="DMSans" FontSize="12.5" LineHeight="1.55"
-                   TextColor="{DynamicResource Faint}" Margin="0,0,0,16">
-                <Label.FormattedText>
-                    <FormattedString>
-                        <Span Text="Kept on this phone. " />
-                        <Span Text="Retake it whenever you like."
-                              FontFamily="DMSansMedium" TextColor="{DynamicResource Muted}">
-                            <Span.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnRetakeClicked" />
-                            </Span.GestureRecognizers>
-                        </Span>
-                    </FormattedString>
-                </Label.FormattedText>
-            </Label>
-            <Button Text="Ask it something" Style="{StaticResource PrimaryButton}" Clicked="OnAskClicked" />
-        </VerticalStackLayout>
+        <controls:PageShell.Footer>
+            <VerticalStackLayout Spacing="0" Margin="0,12,0,0">
+                <Label FontFamily="DMSans" FontSize="12.5" LineHeight="1.55"
+                       TextColor="{DynamicResource Faint}" Margin="0,0,0,16">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Kept on this phone. " />
+                            <Span Text="Retake it whenever you like."
+                                  FontFamily="DMSansMedium" TextColor="{DynamicResource Muted}">
+                                <Span.GestureRecognizers>
+                                    <TapGestureRecognizer Tapped="OnRetakeClicked" />
+                                </Span.GestureRecognizers>
+                            </Span>
+                        </FormattedString>
+                    </Label.FormattedText>
+                </Label>
+                <Button Text="Ask it something" Style="{StaticResource PrimaryButton}" Clicked="OnAskClicked" />
+            </VerticalStackLayout>
+        </controls:PageShell.Footer>
+    </controls:PageShell>
 
+    <!-- Retake confirmation: an in-app themed overlay, not DisplayAlertAsync (Android's stock
+         Material dialog, which ignores this app's palette entirely). Sits above PageShell in this
+         Grid's z-order so it paints on top when shown. -->
+    <controls:ConfirmationDialog x:Name="RetakeConfirmation" />
     </Grid>
 </ContentPage>

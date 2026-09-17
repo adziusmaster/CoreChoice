@@ -34,11 +34,11 @@ public partial class ProfilePage : ContentPage
     /// </summary>
     private async void OnRetakeClicked(object? sender, EventArgs e)
     {
-        var confirmed = await DisplayAlertAsync(
+        var confirmed = await RetakeConfirmation.ShowAsync(
             "Retake the test?",
-            "This clears your fifty answers so you can start over. Your current profile stays exactly as it is until you finish the new one.",
-            "Retake",
-            "Cancel");
+            "This clears your fifty answers — about ten minutes of work — so you can start over. Your current profile stays exactly as it is until you finish the new one.",
+            "Keep this profile",
+            "Retake");
 
         if (!confirmed)
             return;

@@ -2,14 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
              x:Class="CoreChoice.Presentation.CoinsPage"
              x:DataType="presentation:CoinsViewModel"
              Style="{StaticResource PageStyle}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
-
-        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+    <controls:PageShell>
+        <controls:PageShell.MainContent>
             <VerticalStackLayout Spacing="0">
 
                 <Label Text="Analyses"
@@ -135,11 +135,12 @@
                        LineBreakMode="WordWrap" Margin="0,0,0,4" />
 
             </VerticalStackLayout>
-        </ScrollView>
+        </controls:PageShell.MainContent>
 
+        <controls:PageShell.Footer>
         <!-- The line that answers the suspicion this whole category has earned: stays regardless
              of whether buying is enabled. -->
-        <Border Grid.Row="1" BackgroundColor="{DynamicResource SurfaceSunken}" Stroke="{DynamicResource LineSoft}"
+        <Border BackgroundColor="{DynamicResource SurfaceSunken}" Stroke="{DynamicResource LineSoft}"
                 StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="16" Margin="0,12,0,0">
             <Grid ColumnDefinitions="17,11,*">
                 <Border Grid.Column="0" WidthRequest="17" HeightRequest="17" StrokeShape="RoundRectangle 9"
@@ -153,6 +154,6 @@
                        LineBreakMode="WordWrap" />
             </Grid>
         </Border>
-
-    </Grid>
+        </controls:PageShell.Footer>
+    </controls:PageShell>
 </ContentPage>

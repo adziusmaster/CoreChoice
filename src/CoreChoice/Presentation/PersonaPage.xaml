@@ -3,14 +3,29 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
              xmlns:application="clr-namespace:CoreChoice.Application;assembly=CoreChoice.Core"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
              x:Class="CoreChoice.Presentation.PersonaPage"
              x:DataType="presentation:PersonaViewModel"
              Style="{StaticResource PageStyle}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto" Padding="24,52,24,24">
+    <controls:PageShell>
+        <controls:PageShell.Header>
+            <!-- The only way back from here used to be the hardware/system back button — the
+                 owner reported no visible affordance. This is the same shape TestPage's own
+                 top-row back-like affordance ("Pause") uses: a plain text label, MinimumHeightRequest
+                 44 for the tap target, sitting above the scroll content rather than inside it.
+                 Tapping it returns to DilemmaPage exactly as the system back button already does —
+                 no SelectedPersona key is sent, so the persona and weight there are untouched. -->
+            <Label Text="&#8249;  Back" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Muted}"
+                   MinimumHeightRequest="44" VerticalTextAlignment="Center" Margin="0,0,0,4">
+                <Label.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnBackTapped" />
+                </Label.GestureRecognizers>
+            </Label>
+        </controls:PageShell.Header>
 
-        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+        <controls:PageShell.MainContent>
             <VerticalStackLayout Spacing="0">
 
                 <Label Text="Who should answer this?"
@@ -74,12 +89,13 @@
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
-        </ScrollView>
+        </controls:PageShell.MainContent>
 
-        <Button Grid.Row="1" Style="{StaticResource PrimaryButton}" Margin="0,12,0,0"
-                IsVisible="{Binding HasSuggestion}"
-                Text="{Binding Suggested.DisplayName, StringFormat='Ask {0}'}"
-                Clicked="OnAskSuggestedClicked" />
-
-    </Grid>
+        <controls:PageShell.Footer>
+            <Button Style="{StaticResource PrimaryButton}" Margin="0,12,0,0"
+                    IsVisible="{Binding HasSuggestion}"
+                    Text="{Binding Suggested.DisplayName, StringFormat='Ask {0}'}"
+                    Clicked="OnAskSuggestedClicked" />
+        </controls:PageShell.Footer>
+    </controls:PageShell>
 </ContentPage>

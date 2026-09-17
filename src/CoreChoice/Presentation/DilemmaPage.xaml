@@ -2,14 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
              x:Class="CoreChoice.Presentation.DilemmaPage"
              x:DataType="presentation:DilemmaViewModel"
              Style="{StaticResource PageStyle}"
              Shell.NavBarIsVisible="False">
 
-    <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
-
-        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
+    <controls:PageShell>
+        <controls:PageShell.MainContent>
             <VerticalStackLayout Spacing="0">
 
                 <!-- The gear that used to live here is gone: Settings is now its own bottom tab. -->
@@ -127,9 +127,10 @@
                 </VerticalStackLayout>
 
             </VerticalStackLayout>
-        </ScrollView>
+        </controls:PageShell.MainContent>
 
-        <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
+        <controls:PageShell.Footer>
+        <VerticalStackLayout Spacing="0" Margin="0,12,0,0">
 
             <Grid ColumnDefinitions="*,Auto" MinimumHeightRequest="44" Margin="0,0,0,14">
                 <Grid.GestureRecognizers>
@@ -164,6 +165,6 @@
                         IsVisible="{Binding CanSubmit, Converter={StaticResource InvertedBoolConverter}}" />
             </Grid>
         </VerticalStackLayout>
-
-    </Grid>
+        </controls:PageShell.Footer>
+    </controls:PageShell>
 </ContentPage>
