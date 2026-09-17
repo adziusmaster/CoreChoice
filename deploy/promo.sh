@@ -28,8 +28,14 @@
 #   ./deploy/promo.sh revoke TEST1
 set -euo pipefail
 
-# Auto-load deploy/.env (git-ignored) so ADMIN_SECRET etc. are available without exporting.
+# Auto-load the .env (git-ignored) so ADMIN_SECRET etc. are available without exporting.
+# Two locations, because they differ between the repo and the server: locally the file sits
+# beside this script in deploy/, while a deployed CoreChoice keeps it at the stack root
+# (/opt/corechoice/.env) — which is the path docker compose --env-file already points at.
 _SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ ! -f "$_SCRIPT_DIR/.env" ] && [ -f "$_SCRIPT_DIR/../.env" ]; then
+  _SCRIPT_DIR="$(cd "$_SCRIPT_DIR/.." && pwd)"
+fi
 if [ -f "$_SCRIPT_DIR/.env" ]; then
   set -a
   # shellcheck disable=SC1091
