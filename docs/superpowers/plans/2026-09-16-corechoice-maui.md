@@ -29,7 +29,7 @@
 - `record` for value objects and DTOs. `internal` over `public` for implementation classes.
 - Modern C#: file-scoped namespaces, primary constructors, collection expressions.
 - Test naming `MethodName_StateUnderTest_ExpectedBehavior`, strict `// Arrange` / `// Act` / `// Assert`. Mock outbound ports only; never mock domain types.
-- Commits authored by `adziusmaster <adzius.lech@gmail.com>` — already configured repo-locally. Never pass `--author`.
+- Commits authored by `adziusmaster <andrzej@lechdigital.nl>` — already configured repo-locally. Never pass `--author`.
 - **NO `Co-Authored-By` trailer and NO "Generated with Claude" line** in any commit message.
 - Do NOT use `git add -A` or `git add .`. Stage files by explicit path. Never stage anything under `docs/`.
 - The build must stay at **0 warnings**. Backend tests (Core 77, Server 85) must keep passing.

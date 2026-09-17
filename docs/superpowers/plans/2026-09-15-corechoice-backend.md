@@ -21,7 +21,7 @@ appear in the MAUI plan. Do not invent server implementations for any of the thr
 
 ## Global Constraints
 
-- **Git identity.** Every commit in this repo must be authored by `adziusmaster <adzius.lech@gmail.com>`. Already set repo-locally; do not override it and do not commit with `--author`.
+- **Git identity.** Every commit in this repo must be authored by `adziusmaster <andrzej@lechdigital.nl>`. Already set repo-locally; do not override it and do not commit with `--author`.
 - **No `Co-Authored-By` trailer** and no "Generated with Claude" line in any commit message.
 - **Target framework** `net10.0` for every project. `Nullable` and `ImplicitUsings` enabled everywhere.
 - **Async all the way.** No `.Result`, no `.Wait()`. Every IO-bound method takes a `CancellationToken` and it is passed down to the IO call.
