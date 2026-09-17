@@ -63,6 +63,45 @@ dotnet build src/CoreChoice/CoreChoice.csproj -c Debug -f net10.0-android \
 Output: `src/CoreChoice/bin/Debug/net10.0-android/com.adziusmaster.corechoice-Signed.apk`
 (debug-signed — sideloadable, not a Play artifact).
 
+### Two traps that produce a green build and a broken APK
+
+**1. A plain Debug APK contains no application code.** Android fast deployment is the SDK default for
+Debug: the APK is a shell and `adb` pushes the assemblies separately during `-t:Install`. Installed by
+hand it crashes on launch. For anything you hand someone to sideload, pass:
+
+```sh
+-p:EmbedAssembliesIntoApk=true
+```
+
+The APK grows from ~18 MB to ~91 MB, which is the code arriving. Verify rather than assume — the
+assemblies are packaged as `lib/<abi>/lib_*.dll.so`, not under `assets/`:
+
+```sh
+unzip -l <apk> | grep -c 'lib_CoreChoice.dll.so'   # must be >= 1
+```
+
+**2. `ProcessMauiFonts` can go stale and silently ship no fonts.** If the build log says
+
+```
+Skipping target "ProcessMauiFonts" because all output files are up-to-date
+```
+
+while `obj/Debug/net10.0-android/assets/` holds no `.ttf`, the incremental stamp is lying: every build
+then skips font processing and the app falls back to system fonts, losing Lora and DM Sans entirely.
+Deleting `obj/.../resizetizer` is NOT enough — the stamp lives elsewhere. Delete `obj` and `bin`:
+
+```sh
+rm -rf src/CoreChoice/obj src/CoreChoice/bin
+```
+
+**Always check the artifact's contents before handing it over**, because both faults build cleanly:
+
+```sh
+unzip -l <apk> | grep -E '\.ttf$'                  # must list all six fonts
+unzip -l <apk> | grep -E 'appicon'                 # icon present
+```
+
+
 The 27 warnings are all NU1608 (9 distinct, each repeated by the Android build path).
 They are workload version-pinning noise, identical in PurePrep. No `NoWarn` is set.
 
