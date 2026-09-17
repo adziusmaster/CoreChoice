@@ -23,6 +23,7 @@ builder.Services.AddDbContextFactory<ServerDbContext>(o => o.UseSqlite(connectio
 builder.Services.AddScoped<ICoinStore, SqliteCoinStore>();
 builder.Services.AddScoped<IPromptStore, SqlitePromptStore>();
 builder.Services.AddScoped<IGrantPolicy, SqliteGrantPolicy>();
+builder.Services.AddScoped<IPromoStore, SqlitePromoStore>();
 
 // ---- Origin hashing -------------------------------------------------------------------------
 // The cap must recognise a repeat origin without retaining addresses. A configured salt keeps the
@@ -75,6 +76,10 @@ builder.Services.AddRateLimiter(options =>
     // Coin routes are cheap but are the ones worth farming, so they are still bounded.
     options.AddPolicy(RateLimitPolicies.Coins, PerClient(limit: 30, window: TimeSpan.FromMinutes(1)));
     options.AddPolicy(RateLimitPolicies.Personas, PerClient(limit: 60, window: TimeSpan.FromMinutes(1)));
+    // Codes are short and human-typeable (5 chars over a 32-symbol alphabet), which makes them
+    // guessable by brute force; this is the tightest budget alongside Decide so an unlimited
+    // redeem endpoint cannot be turned into a free-coin oracle.
+    options.AddPolicy(RateLimitPolicies.Promo, PerClient(limit: 10, window: TimeSpan.FromMinutes(1)));
 
     static Func<HttpContext, RateLimitPartition<string>> PerClient(int limit, TimeSpan window) =>
         context => RateLimitPartition.GetFixedWindowLimiter(
@@ -127,6 +132,9 @@ app.MapPost("/api/coins/profile-grant", CoinsEndpoint.GrantProfileCompletion)
 app.MapGet("/api/personas", PersonasEndpoint.List)
     .RequireRateLimiting(RateLimitPolicies.Personas);
 
+app.MapPost("/api/promo/redeem", PromoEndpoint.Redeem)
+    .RequireRateLimiting(RateLimitPolicies.Promo);
+
 // Registered only when a secret is configured: mapping it unconditionally and relying on the
 // endpoint filter to 404 leaks the route's existence through argument-binding failures (400 on a
 // malformed body) and wrong-verb requests (405), both of which run before the filter does. An
@@ -134,6 +142,15 @@ app.MapGet("/api/personas", PersonasEndpoint.List)
 if (!string.IsNullOrWhiteSpace(app.Configuration["Dev:Secret"]))
 {
     app.MapPost("/api/dev/grant", DevEndpoint.Grant).AddEndpointFilter(DevEndpoint.SecretFilter);
+}
+
+// Same reasoning as the dev route above: an unset Admin:Secret must mean these routes do not
+// exist at all, not merely that the filter will refuse them.
+if (!string.IsNullOrWhiteSpace(app.Configuration["Admin:Secret"]))
+{
+    app.MapPost("/api/admin/promo", PromoEndpoint.Create).AddEndpointFilter(PromoEndpoint.SecretFilter);
+    app.MapGet("/api/admin/promo", PromoEndpoint.List).AddEndpointFilter(PromoEndpoint.SecretFilter);
+    app.MapPost("/api/admin/promo/{code}/revoke", PromoEndpoint.Revoke).AddEndpointFilter(PromoEndpoint.SecretFilter);
 }
 
 app.MapGet("/health", () => Results.Ok(new { status = "ok" }));
@@ -148,6 +165,7 @@ internal static class RateLimitPolicies
     public const string Decide = "decide";
     public const string Coins = "coins";
     public const string Personas = "personas";
+    public const string Promo = "promo";
 }
 
 /// <summary>Exposed so the integration tests can host the real application.</summary>

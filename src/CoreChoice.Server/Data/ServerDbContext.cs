@@ -10,6 +10,8 @@ internal sealed class ServerDbContext(DbContextOptions<ServerDbContext> options)
     public DbSet<UsageLog> UsageLogs => Set<UsageLog>();
     public DbSet<Persona> Personas => Set<Persona>();
     public DbSet<PromptTemplate> PromptTemplates => Set<PromptTemplate>();
+    public DbSet<PromoCode> PromoCodes => Set<PromoCode>();
+    public DbSet<PromoRedemption> PromoRedemptions => Set<PromoRedemption>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -63,6 +65,23 @@ internal sealed class ServerDbContext(DbContextOptions<ServerDbContext> options)
                 .HasFilter("\"IsActive\" = 1");
             e.HasIndex(x => new { x.PersonaId, x.Version }).IsUnique();
         });
+
+        b.Entity<PromoCode>(e =>
+        {
+            e.HasKey(x => x.Code);
+            e.Property(x => x.CreatedAt).HasConversion(Ticks.To, Ticks.From);
+            e.Property(x => x.ExpiresAt).HasConversion(Ticks.ToNullable, Ticks.FromNullable);
+        });
+
+        b.Entity<PromoRedemption>(e =>
+        {
+            // Composite PK, not a surrogate id: this pair being unique IS the once-per-device rule.
+            // A second SaveChangesAsync inserting the same (Code, DeviceId) fails at the database,
+            // which is what makes two concurrent redeems of the same code by the same device grant
+            // exactly once rather than racing past a prior read.
+            e.HasKey(x => new { x.Code, x.DeviceId });
+            e.Property(x => x.RedeemedAt).HasConversion(Ticks.To, Ticks.From);
+        });
     }
 
     private static class Ticks
@@ -72,5 +91,11 @@ internal sealed class ServerDbContext(DbContextOptions<ServerDbContext> options)
 
         public static readonly System.Linq.Expressions.Expression<Func<long, DateTimeOffset>> From =
             v => new DateTimeOffset(v, TimeSpan.Zero);
+
+        public static readonly System.Linq.Expressions.Expression<Func<DateTimeOffset?, long?>> ToNullable =
+            v => v.HasValue ? v.Value.UtcTicks : (long?)null;
+
+        public static readonly System.Linq.Expressions.Expression<Func<long?, DateTimeOffset?>> FromNullable =
+            v => v.HasValue ? new DateTimeOffset(v.Value, TimeSpan.Zero) : (DateTimeOffset?)null;
     }
 }

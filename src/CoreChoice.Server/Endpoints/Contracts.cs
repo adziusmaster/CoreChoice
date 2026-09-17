@@ -37,3 +37,17 @@ internal sealed record BalanceResponse(Guid DeviceId, int Balance);
 internal sealed record GrantResponse(Guid DeviceId, int Balance, bool Granted, string? Reason);
 
 internal sealed record PersonaResponse(string Id, string DisplayName, string Description);
+
+internal sealed record RedeemCodeRequest(Guid DeviceId, string Code);
+
+internal sealed record RedeemCodeResponse(int CoinsGranted, int Balance);
+
+internal sealed record CreatePromoRequest(string? Code, int? Coins, int? ExpiresInDays);
+
+internal sealed record PromoResponse(
+    string Code,
+    int Coins,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset? ExpiresAt,
+    bool Revoked,
+    int RedemptionCount);

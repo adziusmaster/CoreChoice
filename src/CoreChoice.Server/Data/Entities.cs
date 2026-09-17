@@ -56,6 +56,36 @@ internal sealed class UsageLog
     public DateTimeOffset At { get; set; }
 }
 
+/// <summary>
+/// A promo code that grants a fixed number of analyses (coins) on redemption. One code may be
+/// redeemed by many devices, but a revoked or expired code redeems for no one — see
+/// <see cref="PromoRedemption"/> for the once-per-device enforcement.
+/// </summary>
+internal sealed class PromoCode
+{
+    /// <summary>Normalized (upper-case) code, e.g. "AB3KP".</summary>
+    public string Code { get; set; } = string.Empty;
+    public int Coins { get; set; }
+    public DateTimeOffset CreatedAt { get; set; }
+    /// <summary>Optional expiry; null means the code never expires.</summary>
+    public DateTimeOffset? ExpiresAt { get; set; }
+    /// <summary>Set true to permanently disable the code regardless of expiry.</summary>
+    public bool Revoked { get; set; }
+}
+
+/// <summary>
+/// Records that a specific device redeemed a specific code. The composite primary key (Code,
+/// DeviceId) is the entire once-per-device mechanism: a second insert for the same pair is a
+/// database-level duplicate-key error, not a race a prior read could miss.
+/// </summary>
+internal sealed class PromoRedemption
+{
+    public string Code { get; set; } = string.Empty;
+    public Guid DeviceId { get; set; }
+    public int CoinsGranted { get; set; }
+    public DateTimeOffset RedeemedAt { get; set; }
+}
+
 /// <summary>An advisor persona. Rows, not an enum, so adding one is an insert.</summary>
 internal sealed class Persona
 {

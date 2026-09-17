@@ -33,6 +33,9 @@ services:
       Gemini__Model: ${GEMINI_MODEL:-gemini-flash-lite-latest}
       # Protects POST /api/dev/grant. Soft-degrade: unset -> that route 404s.
       Dev__Secret: ${DEV_SECRET:-}
+      # Protects /api/admin/promo/*. Soft-degrade: unset -> those routes 404. Set to enable
+      # deploy/promo.sh.
+      Admin__Secret: ${ADMIN_SECRET:-}
       # Salts the origin hash behind the free-coin cap. Keep it stable, or the cap resets on every
       # deploy; keep it secret, or the stored hashes become reversible by enumeration.
       Security__IpHashSalt: ${IP_HASH_SALT:?set IP_HASH_SALT in .env}
