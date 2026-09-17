@@ -22,6 +22,28 @@
     crash reports; managed symbols make Release stack traces legible; native libs stay unstripped
     so a native-symbols archive can be produced from them later.
   -->
+  <!--
+    Release signing. The keystore and its password live OUTSIDE the repo, in ~/keystores, and
+    nothing here contains either: the password is read from CORECHOICE_KEYSTORE_PASS at build
+    time. Signing activates only for a Release Android build with that variable set, so an
+    ordinary Debug build is unaffected and a Release build without the secret fails loudly
+    rather than quietly producing an unsigned or debug-signed artifact.
+
+      CORECHOICE_KEYSTORE_PASS=$(cat ~/keystores/corechoice-upload.pass.txt) \
+      dotnet build src/CoreChoice/CoreChoice.csproj -c Release -f net10.0-android \
+        -p:AndroidPackageFormat=aab
+  -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android' And '$(CORECHOICE_KEYSTORE_PASS)' != ''">
+    <CoreChoiceKeystore Condition="'$(CoreChoiceKeystore)' == ''">$(HOME)/keystores/corechoice-upload.jks</CoreChoiceKeystore>
+    <CoreChoiceKeystore Condition="'$(CoreChoiceKeystore)' == ''">$(USERPROFILE)/keystores/corechoice-upload.jks</CoreChoiceKeystore>
+    <CoreChoiceKeyAlias Condition="'$(CoreChoiceKeyAlias)' == ''">corechoice</CoreChoiceKeyAlias>
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(CoreChoiceKeystore)</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>$(CoreChoiceKeyAlias)</AndroidSigningKeyAlias>
+    <AndroidSigningStorePass>$(CORECHOICE_KEYSTORE_PASS)</AndroidSigningStorePass>
+    <AndroidSigningKeyPass>$(CORECHOICE_KEYSTORE_PASS)</AndroidSigningKeyPass>
+  </PropertyGroup>
+
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <AndroidLinkTool>r8</AndroidLinkTool>
     <AndroidManagedSymbols>true</AndroidManagedSymbols>
