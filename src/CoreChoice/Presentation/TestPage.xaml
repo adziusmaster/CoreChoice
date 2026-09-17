@@ -77,57 +77,48 @@
                                        TextColor="{DynamicResource Ink}"
                                        LineBreakMode="WordWrap"
                                        Margin="0,0,0,14" />
+                                <!-- Each column is two mutually-exclusive Buttons (only one
+                                     IsVisible at a time) instead of one Button whose colours flip
+                                     via a DataTrigger: a DynamicResource used as a trigger Setter
+                                     value resolves once, when the trigger fires, and does not
+                                     re-resolve when ThemeService swaps the token dictionary on a
+                                     later theme change. Ordinary element properties (used on the
+                                     "selected" Button below) are re-resolved on a dictionary swap. -->
                                 <Grid ColumnDefinitions="*,*,*,*,*" ColumnSpacing="7">
-                                    <Button Grid.Column="0" Text="1" Style="{StaticResource LikertButton}" CommandParameter="1" Clicked="OnLikertClicked">
-                                        <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=1}" Value="True">
-                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
-                                                <Setter Property="FontFamily" Value="DMSansBold" />
-                                            </DataTrigger>
-                                        </Button.Triggers>
-                                    </Button>
-                                    <Button Grid.Column="1" Text="2" Style="{StaticResource LikertButton}" CommandParameter="2" Clicked="OnLikertClicked">
-                                        <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=2}" Value="True">
-                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
-                                                <Setter Property="FontFamily" Value="DMSansBold" />
-                                            </DataTrigger>
-                                        </Button.Triggers>
-                                    </Button>
-                                    <Button Grid.Column="2" Text="3" Style="{StaticResource LikertButton}" CommandParameter="3" Clicked="OnLikertClicked">
-                                        <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=3}" Value="True">
-                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
-                                                <Setter Property="FontFamily" Value="DMSansBold" />
-                                            </DataTrigger>
-                                        </Button.Triggers>
-                                    </Button>
-                                    <Button Grid.Column="3" Text="4" Style="{StaticResource LikertButton}" CommandParameter="4" Clicked="OnLikertClicked">
-                                        <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=4}" Value="True">
-                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
-                                                <Setter Property="FontFamily" Value="DMSansBold" />
-                                            </DataTrigger>
-                                        </Button.Triggers>
-                                    </Button>
-                                    <Button Grid.Column="4" Text="5" Style="{StaticResource LikertButton}" CommandParameter="5" Clicked="OnLikertClicked">
-                                        <Button.Triggers>
-                                            <DataTrigger TargetType="Button" Binding="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=5}" Value="True">
-                                                <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="BorderColor" Value="{DynamicResource Accent}" />
-                                                <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />
-                                                <Setter Property="FontFamily" Value="DMSansBold" />
-                                            </DataTrigger>
-                                        </Button.Triggers>
-                                    </Button>
+                                    <Button Grid.Column="0" Text="1" Style="{StaticResource LikertButton}" CommandParameter="1" Clicked="OnLikertClicked"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=!1}" />
+                                    <Button Grid.Column="0" Text="1" Style="{StaticResource LikertButton}" CommandParameter="1" Clicked="OnLikertClicked"
+                                            BackgroundColor="{DynamicResource Accent}" BorderColor="{DynamicResource Accent}"
+                                            TextColor="{DynamicResource AccentInk}" FontFamily="DMSansBold"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=1}" />
+
+                                    <Button Grid.Column="1" Text="2" Style="{StaticResource LikertButton}" CommandParameter="2" Clicked="OnLikertClicked"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=!2}" />
+                                    <Button Grid.Column="1" Text="2" Style="{StaticResource LikertButton}" CommandParameter="2" Clicked="OnLikertClicked"
+                                            BackgroundColor="{DynamicResource Accent}" BorderColor="{DynamicResource Accent}"
+                                            TextColor="{DynamicResource AccentInk}" FontFamily="DMSansBold"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=2}" />
+
+                                    <Button Grid.Column="2" Text="3" Style="{StaticResource LikertButton}" CommandParameter="3" Clicked="OnLikertClicked"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=!3}" />
+                                    <Button Grid.Column="2" Text="3" Style="{StaticResource LikertButton}" CommandParameter="3" Clicked="OnLikertClicked"
+                                            BackgroundColor="{DynamicResource Accent}" BorderColor="{DynamicResource Accent}"
+                                            TextColor="{DynamicResource AccentInk}" FontFamily="DMSansBold"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=3}" />
+
+                                    <Button Grid.Column="3" Text="4" Style="{StaticResource LikertButton}" CommandParameter="4" Clicked="OnLikertClicked"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=!4}" />
+                                    <Button Grid.Column="3" Text="4" Style="{StaticResource LikertButton}" CommandParameter="4" Clicked="OnLikertClicked"
+                                            BackgroundColor="{DynamicResource Accent}" BorderColor="{DynamicResource Accent}"
+                                            TextColor="{DynamicResource AccentInk}" FontFamily="DMSansBold"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=4}" />
+
+                                    <Button Grid.Column="4" Text="5" Style="{StaticResource LikertButton}" CommandParameter="5" Clicked="OnLikertClicked"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=!5}" />
+                                    <Button Grid.Column="4" Text="5" Style="{StaticResource LikertButton}" CommandParameter="5" Clicked="OnLikertClicked"
+                                            BackgroundColor="{DynamicResource Accent}" BorderColor="{DynamicResource Accent}"
+                                            TextColor="{DynamicResource AccentInk}" FontFamily="DMSansBold"
+                                            IsVisible="{Binding Response, Converter={StaticResource LikertSelectedConverter}, ConverterParameter=5}" />
                                 </Grid>
                             </VerticalStackLayout>
                         </DataTemplate>

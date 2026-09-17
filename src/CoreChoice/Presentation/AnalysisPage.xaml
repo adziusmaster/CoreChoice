@@ -33,34 +33,34 @@
                            FontFamily="LoraMedium" FontSize="27" LineHeight="1.3" CharacterSpacing="-0.2"
                            TextColor="{DynamicResource Ink}" Margin="0,0,0,16" LineBreakMode="WordWrap" />
 
-                    <Border Padding="7,7,12,7" HorizontalOptions="Start" Margin="0,0,0,26"
-                            StrokeShape="RoundRectangle 6" StrokeThickness="1"
-                            BackgroundColor="{DynamicResource Surface}" Stroke="{DynamicResource Line}">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding IsVerdictStrong}" Value="True">
-                                <Setter Property="BackgroundColor" Value="{DynamicResource AccentWash}" />
-                                <Setter Property="Stroke" Value="{DynamicResource AccentLine}" />
-                            </DataTrigger>
-                        </Border.Triggers>
-                        <HorizontalStackLayout Spacing="8">
-                            <Label Text="&#10003;" FontFamily="DMSansBold" FontSize="12"
-                                   TextColor="{DynamicResource Muted}" VerticalOptions="Center">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsVerdictStrong}" Value="True">
-                                        <Setter Property="TextColor" Value="{DynamicResource Accent}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                            <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="13"
-                                   CharacterSpacing="0.01" TextColor="{DynamicResource Muted}" VerticalOptions="Center">
-                                <Label.Triggers>
-                                    <DataTrigger TargetType="Label" Binding="{Binding IsVerdictStrong}" Value="True">
-                                        <Setter Property="TextColor" Value="{DynamicResource Accent}" />
-                                    </DataTrigger>
-                                </Label.Triggers>
-                            </Label>
-                        </HorizontalStackLayout>
-                    </Border>
+                    <!-- Two mutually-exclusive Borders (only one IsVisible at a time), each with its
+                         own ordinary-property content, instead of one Border/Label set whose
+                         colours flip via a DataTrigger: a DynamicResource used as a trigger Setter
+                         value resolves once, when the trigger fires, and does not re-resolve when
+                         ThemeService swaps the token dictionary on a later theme change. Ordinary
+                         element properties (used below) are re-resolved on a dictionary swap. -->
+                    <Grid HorizontalOptions="Start" Margin="0,0,0,26">
+                        <Border Padding="7,7,12,7" StrokeShape="RoundRectangle 6" StrokeThickness="1"
+                                BackgroundColor="{DynamicResource Surface}" Stroke="{DynamicResource Line}"
+                                IsVisible="{Binding IsVerdictStrong, Converter={StaticResource InvertedBoolConverter}}">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="&#10003;" FontFamily="DMSansBold" FontSize="12"
+                                       TextColor="{DynamicResource Muted}" VerticalOptions="Center" />
+                                <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="13"
+                                       CharacterSpacing="0.01" TextColor="{DynamicResource Muted}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                        <Border Padding="7,7,12,7" StrokeShape="RoundRectangle 6" StrokeThickness="1"
+                                BackgroundColor="{DynamicResource AccentWash}" Stroke="{DynamicResource AccentLine}"
+                                IsVisible="{Binding IsVerdictStrong}">
+                            <HorizontalStackLayout Spacing="8">
+                                <Label Text="&#10003;" FontFamily="DMSansBold" FontSize="12"
+                                       TextColor="{DynamicResource Accent}" VerticalOptions="Center" />
+                                <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="13"
+                                       CharacterSpacing="0.01" TextColor="{DynamicResource Accent}" VerticalOptions="Center" />
+                            </HorizontalStackLayout>
+                        </Border>
+                    </Grid>
 
                     <Border Style="{StaticResource AccentCardBorder}" Padding="18,18,18,20" Margin="0,0,0,22"
                             IsVisible="{Binding Analysis.IsPersonalized}">

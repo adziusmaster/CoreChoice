@@ -47,6 +47,12 @@ public class MainActivity : MauiAppCompatActivity
         // double-pad every screen rather than fix anything reported.
         var content = Window!.DecorView!.FindViewById(global::Android.Resource.Id.Content)!;
         ViewCompat.SetOnApplyWindowInsetsListener(content, new SystemBarsBottomInsetListener());
+
+        // Shell's bottom tab bar is native chrome (a Material BottomNavigationView) with no XAML
+        // surface — see TabBarLabelCentering's own doc for why its labels need a one-time,
+        // measured nudge rather than a style fix, and why that is unrelated to the inset padding
+        // above (it corrects where the label sits *inside* the bar, not the bar's height).
+        CoreChoice.Platforms.Android.TabBarLabelCentering.Apply(content);
     }
 
     /// <summary>
