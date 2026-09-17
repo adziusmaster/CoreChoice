@@ -43,6 +43,15 @@ if [ -f "$_SCRIPT_DIR/.env" ]; then
   set +a
 fi
 
+# Last resort: the maintainer's own copy of the admin secret, kept outside every repo at
+# ~/keys/corechoice-admin.secret (mode 600), alongside the Gemini key. Reading it here rather
+# than exporting ADMIN_SECRET from a shell profile keeps the secret out of the environment of
+# every process on the machine — it is read only by this script, only when it runs.
+if [ -z "${ADMIN_SECRET:-}" ] && [ -f "$HOME/keys/corechoice-admin.secret" ]; then
+  ADMIN_SECRET="$(tr -d '\r\n' < "$HOME/keys/corechoice-admin.secret")"
+  export ADMIN_SECRET
+fi
+
 # ============================================================================
 #  >>> EDIT HERE to generate a code, then run:  ./deploy/promo.sh gen  <<<
 # ============================================================================

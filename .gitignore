@@ -4,3 +4,11 @@ obj/
 .DS_Store
 *.db
 .superpowers/
+
+# Real environment files, which carry the Gemini key, the IP-hash salt and the promo admin
+# secret. Only .env.example — which holds empty values — is ever committed. promo.sh tells the
+# maintainer to put ADMIN_SECRET in deploy/.env, so this must be ignored before anyone does.
+.env
+deploy/.env
+**/.env
+!**/.env.example
