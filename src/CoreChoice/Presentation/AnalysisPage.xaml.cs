@@ -65,7 +65,7 @@ public partial class AnalysisPage : ContentPage, IQueryAttributable
     private async void OnSettledClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync($"//{nameof(DilemmaPage)}");
 
-    /// <summary>"Get more coins" — switches to the Analyses tab (<see cref="CoinsPage"/>).
+    /// <summary>"Get more coins" — switches to the Coins tab (<see cref="CoinsPage"/>).
     /// Buying itself is disabled there for now (see <see cref="CoinsViewModel"/>'s own doc), but
     /// the balance and real Play Store prices are worth seeing regardless.</summary>
     private async void OnGetCoinsClicked(object? sender, EventArgs e) =>

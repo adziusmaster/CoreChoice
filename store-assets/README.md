@@ -56,6 +56,8 @@ option, and the ones that will quietly talk you out of the other.
 • Say it out loud. Voice input, for when a dilemma is easier spoken than typed.
 • Your answers stay on your phone. The test result is stored locally; nothing you
   type is kept on our servers after your answer comes back.
+• Every question you ask and every answer you get is kept on your phone too,
+  indefinitely, so you can look back on it later — and it is never sent anywhere.
 • Three colour themes, dark and light, so the app can feel the way you need it to.
 
 Analyses beyond the free five are paid for with coins, bought in-app. No

@@ -97,16 +97,8 @@ public sealed partial class DilemmaViewModel(
     public string FooterDisplayName => Persona?.DisplayName ?? SuggestedDisplayName;
 
     /// <summary>Short, plain-language stand-in for the numeric weight, shown next to the slider.
-    /// Deliberately not <see cref="DecisionWeight.Description"/> — that full sentence is written
-    /// for the advisor prompt, not a five-word label next to a slider.</summary>
-    public string WeightLabel => Weight switch
-    {
-        <= 1 => "Barely anything",
-        2 => "Not much",
-        3 => "A fair amount",
-        4 => "Quite a lot",
-        _ => "A great deal",
-    };
+    /// See <see cref="DecisionWeightLabel"/> for why this is not <see cref="DecisionWeight.Description"/>.</summary>
+    public string WeightLabel => DecisionWeightLabel.For(Weight);
 
     /// <summary>
     /// False until both options are non-empty and within <see cref="Dilemma.MaxOptionLength"/>,
@@ -234,6 +226,24 @@ public sealed partial class DilemmaViewModel(
             && _catalogDisplayNames.TryGetValue(suggestedId, out var catalogName)
                 ? catalogName
                 : PersonaDisplayNames.DisplayName(suggestedId);
+    }
+
+    /// <summary>
+    /// "Ask this again" — puts a past decision's two options, context and weight back into this
+    /// screen so they can be reworded, re-weighed, or handed to a different advisor. Deliberately
+    /// leaves <see cref="Persona"/> unset rather than restoring the one that answered before:
+    /// setting <see cref="Weight"/> below already fires <see cref="OnWeightChanged(int)"/>, which clears
+    /// any persona and recomputes the suggestion for it, so "change advisor" falls out of the
+    /// existing weight-change behaviour rather than needing a case of its own. Nothing here spends
+    /// a coin — that only ever happens when the rebuilt request is actually submitted, exactly as
+    /// a fresh question would.
+    /// </summary>
+    public void LoadFromPastDecision(PastDecision decision)
+    {
+        OptionA = decision.Dilemma.OptionA;
+        OptionB = decision.Dilemma.OptionB;
+        Context = decision.Dilemma.Context ?? string.Empty;
+        Weight = Math.Clamp(decision.Weight.Value, DecisionWeight.Min, DecisionWeight.Max);
     }
 
     /// <summary>

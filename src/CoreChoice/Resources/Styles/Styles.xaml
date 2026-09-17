@@ -38,6 +38,16 @@
         <Setter Property="TextColor" Value="{DynamicResource Faint}" />
     </Style>
 
+    <!-- One block's own heading inside a headed-sections page (SettingsPage is the first: see
+         its own comment on why sections, not sub-tabs). Deliberately its own style rather than
+         reusing TitleLabel: a page can hold several of these, so it needs to read as visibly
+         smaller than the page's own LoraMedium/28 title. -->
+    <Style x:Key="SectionHeading" TargetType="Label">
+        <Setter Property="FontFamily" Value="LoraSemiBold" />
+        <Setter Property="FontSize" Value="19" />
+        <Setter Property="TextColor" Value="{DynamicResource Ink}" />
+    </Style>
+
     <Style x:Key="PrimaryButton" TargetType="Button">
         <Setter Property="BackgroundColor" Value="{DynamicResource Accent}" />
         <Setter Property="TextColor" Value="{DynamicResource AccentInk}" />

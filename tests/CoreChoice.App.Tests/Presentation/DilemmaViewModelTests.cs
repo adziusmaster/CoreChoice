@@ -479,4 +479,78 @@ public class DilemmaViewModelTests
         // Assert
         vm.FooterDisplayName.Should().Be("The Long View (from catalog)");
     }
+
+    // ===== LoadFromPastDecision ("Ask this again") =====
+
+    private static PastDecision BuildPastDecision(string optionA = "Quit my job", string optionB = "Stay put",
+        string? context = "Eight months of savings.", int weight = 4, string persona = "the-long-view") => new(
+        Id: 7,
+        Dilemma: Dilemma.Create(optionA, optionB, context),
+        Persona: PersonaId.From(persona),
+        Weight: DecisionWeight.From(weight),
+        Analysis: new DecisionAnalysis("Rec", 60, ["Because"], new OptionAssessment(optionA, [], []),
+            new OptionAssessment(optionB, [], []), string.Empty, false),
+        AskedAt: DateTimeOffset.UtcNow);
+
+    [Fact]
+    public void LoadFromPastDecision_ShouldPutBackTheOptionsContextAndWeight()
+    {
+        // Arrange
+        var vm = BuildVm();
+
+        // Act
+        vm.LoadFromPastDecision(BuildPastDecision());
+
+        // Assert
+        vm.OptionA.Should().Be("Quit my job");
+        vm.OptionB.Should().Be("Stay put");
+        vm.Context.Should().Be("Eight months of savings.");
+        vm.Weight.Should().Be(4);
+    }
+
+    [Fact]
+    public void LoadFromPastDecision_ShouldClearAnyExplicitPersonaSoAnAdvisorCanBeChosenAgain()
+    {
+        // Arrange — "Ask this again" must let the person change advisor; it must never resubmit
+        // silently with whoever answered before.
+        var vm = BuildVm();
+        vm.Persona = SamplePersona;
+
+        // Act
+        vm.LoadFromPastDecision(BuildPastDecision(weight: 5));
+
+        // Assert
+        vm.Persona.Should().BeNull();
+    }
+
+    [Fact]
+    public void LoadFromPastDecision_WithNoStoredContext_ShouldLeaveContextEmptyRatherThanNull()
+    {
+        // Arrange
+        var vm = BuildVm();
+
+        // Act
+        vm.LoadFromPastDecision(BuildPastDecision(context: null));
+
+        // Assert
+        vm.Context.Should().Be(string.Empty);
+    }
+
+    [Fact]
+    public void LoadFromPastDecision_ShouldNeverBuildARequestOrSpendACoinByItself()
+    {
+        // Arrange — this is the safety invariant that matters most: re-loading a past decision
+        // must be indistinguishable, cost-wise, from opening the Ask screen fresh. Nothing here
+        // calls a decision client or coin ledger at all, so there is nothing to assert on except
+        // that the screen still requires an explicit persona (and therefore an explicit submit)
+        // before a request can be built.
+        var vm = BuildVm();
+
+        // Act
+        vm.LoadFromPastDecision(BuildPastDecision());
+
+        // Assert
+        vm.CanSubmit.Should().BeTrue();
+        vm.Persona.Should().BeNull("a persona must still be chosen explicitly before anything can be submitted");
+    }
 }

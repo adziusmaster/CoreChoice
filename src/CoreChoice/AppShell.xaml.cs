@@ -5,22 +5,25 @@ namespace CoreChoice;
 
 /// <summary>
 /// The bottom tab bar: <b>Ask</b> (<see cref="DilemmaPage"/>, the primary/default tab),
-/// <b>Profile</b> (<see cref="TestIntroPage"/>, which auto-navigates on to
-/// <see cref="ProfilePage"/> once it is safe to — see that page's own doc comment),
-/// <b>Analyses</b> (<see cref="CoinsPage"/>) and <b>Settings</b> (<see cref="SettingsPage"/>).
-/// The four tab roots are constructed here from the four injected instances, not declared as
-/// ShellContent DataTemplates in XAML, so each is guaranteed to come from the composition root's
-/// DI container (and so get its view model by constructor injection) rather than an ambiguous
-/// Activator.CreateInstance path — the same reasoning this class used for its single root page
-/// before tabs existed. <see cref="TestPage"/>, <see cref="ProfilePage"/>, <see cref="PersonaPage"/>
-/// and <see cref="AnalysisPage"/> stay ordinary routes, pushed onto whichever tab's own stack sent
-/// the person there, never tabs of their own.
+/// <b>Answers</b> (<see cref="AnswersPage"/>, the person's own decision history), <b>Profile</b>
+/// (<see cref="TestIntroPage"/>, which auto-navigates on to <see cref="ProfilePage"/> once it is
+/// safe to — see that page's own doc comment), <b>Coins</b> (<see cref="CoinsPage"/> — the
+/// purchase screen; named for what it does now that a real list of analyses lives on the Answers
+/// tab instead) and <b>Settings</b> (<see cref="SettingsPage"/>). The five tab roots are
+/// constructed here from the five injected instances, not declared as ShellContent DataTemplates
+/// in XAML, so each is guaranteed to come from the composition root's DI container (and so get its
+/// view model by constructor injection) rather than an ambiguous Activator.CreateInstance path —
+/// the same reasoning this class used for its single root page before tabs existed.
+/// <see cref="TestPage"/>, <see cref="ProfilePage"/>, <see cref="PersonaPage"/>,
+/// <see cref="AnalysisPage"/> and <see cref="AnswerDetailPage"/> stay ordinary routes, pushed onto
+/// whichever tab's own stack sent the person there, never tabs of their own.
 /// </summary>
 public partial class AppShell : Shell
 {
     public AppShell(
         TestIntroPage introPage,
         DilemmaPage dilemmaPage,
+        AnswersPage answersPage,
         CoinsPage coinsPage,
         SettingsPage settingsPage,
         ICoinLedgerClient coinLedger)
@@ -31,11 +34,13 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ProfilePage), typeof(ProfilePage));
         Routing.RegisterRoute(nameof(PersonaPage), typeof(PersonaPage));
         Routing.RegisterRoute(nameof(AnalysisPage), typeof(AnalysisPage));
+        Routing.RegisterRoute(nameof(AnswerDetailPage), typeof(AnswerDetailPage));
 
         var tabs = new TabBar();
         tabs.Items.Add(new ShellContent { Title = "Ask", Route = nameof(DilemmaPage), Content = dilemmaPage });
+        tabs.Items.Add(new ShellContent { Title = "Answers", Route = nameof(AnswersPage), Content = answersPage });
         tabs.Items.Add(new ShellContent { Title = "Profile", Route = nameof(TestIntroPage), Content = introPage });
-        tabs.Items.Add(new ShellContent { Title = "Analyses", Route = nameof(CoinsPage), Content = coinsPage });
+        tabs.Items.Add(new ShellContent { Title = "Coins", Route = nameof(CoinsPage), Content = coinsPage });
         tabs.Items.Add(new ShellContent { Title = "Settings", Route = nameof(SettingsPage), Content = settingsPage });
         Items.Add(tabs);
 

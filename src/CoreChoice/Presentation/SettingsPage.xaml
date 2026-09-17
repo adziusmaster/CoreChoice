@@ -38,13 +38,24 @@
         </ResourceDictionary>
     </ContentPage.Resources>
 
+    <!--
+      Headed sections, not sub-tabs: a second navigation layer inside a settings list this short
+      would hide things and buy nothing (see the owner's own note this page was built against).
+      Appearance is the first section; Language, About and Data are meant to arrive later as more
+      blocks appended below it in this same VerticalStackLayout — each its own SectionHeading
+      followed by its own content, exactly like this one, with no structural change needed here to
+      make room for them.
+    -->
     <controls:PageShell>
         <controls:PageShell.MainContent>
             <VerticalStackLayout Spacing="0">
 
-                <Label Text="Appearance"
+                <Label Text="Settings"
                        FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
                        TextColor="{DynamicResource Ink}" Margin="0,0,0,28" />
+
+                <!-- ===== Appearance ===== -->
+                <Label Text="Appearance" Style="{StaticResource SectionHeading}" Margin="0,0,0,18" />
 
                 <Label Text="MODE" Style="{StaticResource MicroLabel}" FontSize="12" Margin="0,0,0,12" />
 

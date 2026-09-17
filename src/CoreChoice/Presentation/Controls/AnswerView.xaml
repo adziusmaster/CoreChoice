@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
+             x:Class="CoreChoice.Presentation.Controls.AnswerView"
+             x:Name="Root">
+
+    <!--
+      The one rendering of an advisor's answer, shared by AnalysisPage (the live, just-answered
+      screen) and AnswerDetailPage (a past decision reopened from the Answers tab). Before this
+      existed, AnalysisPage.xaml owned this content directly; extracting it here is what
+      AnswerDetailPage reuses rather than writing a second, inevitably-diverging copy of the same
+      recommendation/verdict/reasoning/options shape.
+
+      Bindable properties, not a shared view model: AnalysisViewModel and AnswerDetailViewModel are
+      two different classes backing two different screens (one mid-flow, one historical), so there
+      is no single view model type to share x:DataType against. BindingContext is instead pointed
+      at this control itself ({x:Reference Root}), and each host page binds this control's own
+      Analysis/Verdict/IsVerdictStrong/ShowBothSides properties from whatever its own view model
+      calls them.
+
+      Every colour is a DynamicResource, and the verdict badge below is the same two
+      mutually-exclusive Borders (only one IsVisible at a time) AnalysisPage always used — see
+      Styles.xaml's own header comment for why a DynamicResource inside a Trigger/DataTrigger/
+      VisualState setter goes stale across a ThemeService palette swap.
+    -->
+    <!-- No x:DataType here (unlike every other page in this app): the MAUI XAML compiler's
+         compiled-binding source generator, when x:DataType is this control's own code-behind
+         class and BindingContext is pointed at the control itself via x:Reference, emits a static
+         local function for the IsVerdictStrong + Converter binding that then illegally references
+         `this` (CS8422) — a source-gen limitation specific to a ContentView binding to its own
+         bindable properties this way. Falling back to classic (runtime-resolved) bindings here
+         sidesteps the bug; behaviour is identical, just without the compile-time binding-path
+         validation the rest of this app's pages get from their view-model x:DataType. -->
+    <VerticalStackLayout Spacing="0" BindingContext="{x:Reference Root}">
+
+        <Label Text="{Binding Analysis.Recommendation}"
+               FontFamily="LoraMedium" FontSize="27" LineHeight="1.3" CharacterSpacing="-0.2"
+               TextColor="{DynamicResource Ink}" Margin="0,0,0,16" LineBreakMode="WordWrap" />
+
+        <Grid HorizontalOptions="Start" Margin="0,0,0,26">
+            <Border Padding="7,7,12,7" StrokeShape="RoundRectangle 6" StrokeThickness="1"
+                    BackgroundColor="{DynamicResource Surface}" Stroke="{DynamicResource Line}"
+                    IsVisible="{Binding IsVerdictStrong, Converter={StaticResource InvertedBoolConverter}}">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="&#10003;" FontFamily="DMSansBold" FontSize="12"
+                           TextColor="{DynamicResource Muted}" VerticalOptions="Center" />
+                    <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="13"
+                           CharacterSpacing="0.01" TextColor="{DynamicResource Muted}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+            <Border Padding="7,7,12,7" StrokeShape="RoundRectangle 6" StrokeThickness="1"
+                    BackgroundColor="{DynamicResource AccentWash}" Stroke="{DynamicResource AccentLine}"
+                    IsVisible="{Binding IsVerdictStrong}">
+                <HorizontalStackLayout Spacing="8">
+                    <Label Text="&#10003;" FontFamily="DMSansBold" FontSize="12"
+                           TextColor="{DynamicResource Accent}" VerticalOptions="Center" />
+                    <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="13"
+                           CharacterSpacing="0.01" TextColor="{DynamicResource Accent}" VerticalOptions="Center" />
+                </HorizontalStackLayout>
+            </Border>
+        </Grid>
+
+        <Border Style="{StaticResource AccentCardBorder}" Padding="18,18,18,20" Margin="0,0,0,22"
+                IsVisible="{Binding Analysis.IsPersonalized}">
+            <VerticalStackLayout Spacing="11">
+                <Label Text="BECAUSE IT IS YOU ASKING" Style="{StaticResource MicroLabel}"
+                       TextColor="{DynamicResource Accent}" FontSize="11" />
+                <Label Text="{Binding Analysis.PersonalityNote}"
+                       FontFamily="Lora" FontSize="16" LineHeight="1.6"
+                       TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+        </Border>
+
+        <VerticalStackLayout Spacing="15" BindableLayout.ItemsSource="{Binding Analysis.Reasoning}">
+            <BindableLayout.ItemTemplate>
+                <DataTemplate x:DataType="x:String">
+                    <Grid ColumnDefinitions="20,13,*">
+                        <Ellipse Grid.Column="0" WidthRequest="6" HeightRequest="6"
+                                 Fill="{DynamicResource Accent}" VerticalOptions="Start" Margin="0,7,0,0" />
+                        <Label Grid.Column="2" Text="{Binding .}"
+                               FontFamily="DMSans" FontSize="14" LineHeight="1.55"
+                               TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
+                    </Grid>
+                </DataTemplate>
+            </BindableLayout.ItemTemplate>
+        </VerticalStackLayout>
+
+        <VerticalStackLayout Spacing="14" Margin="0,22,0,0" IsVisible="{Binding ShowBothSides}">
+            <Border Style="{StaticResource CardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Option A — strengths and risks" Style="{StaticResource MicroLabel}"
+                           TextColor="{DynamicResource Faint}" FontSize="11" />
+                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Analysis.OptionA.Strengths}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Label Text="{Binding ., StringFormat='+ {0}'}" FontFamily="DMSans" FontSize="13.5"
+                                       TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Analysis.OptionA.Risks}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Label Text="{Binding ., StringFormat='− {0}'}" FontFamily="DMSans" FontSize="13.5"
+                                       TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+            <Border Style="{StaticResource CardBorder}" Padding="16">
+                <VerticalStackLayout Spacing="8">
+                    <Label Text="Option B — strengths and risks" Style="{StaticResource MicroLabel}"
+                           TextColor="{DynamicResource Faint}" FontSize="11" />
+                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Analysis.OptionB.Strengths}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Label Text="{Binding ., StringFormat='+ {0}'}" FontFamily="DMSans" FontSize="13.5"
+                                       TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                    <VerticalStackLayout Spacing="4" BindableLayout.ItemsSource="{Binding Analysis.OptionB.Risks}">
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Label Text="{Binding ., StringFormat='− {0}'}" FontFamily="DMSans" FontSize="13.5"
+                                       TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" />
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </VerticalStackLayout>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+
+    </VerticalStackLayout>
+</ContentView>

@@ -1,8 +1,10 @@
 namespace CoreChoice.Presentation;
 
 /// <summary>
-/// Artboard 8 · "Analyses" — the coins/analyses store the answer screen's "Get more coins" links
-/// to. Buying is fully implemented in <see cref="CoinsViewModel.BuyAsync"/> but disabled for now
+/// Artboard 8 · "Coins" — the coins/analyses store the answer screen's "Get more coins" links to.
+/// Named "Coins" rather than the artboard's original "Analyses": this is the purchase screen, and
+/// calling it "Analyses" would be actively misleading once the Answers tab holds a real list of
+/// past analyses. Buying is fully implemented in <see cref="CoinsViewModel.BuyAsync"/> but disabled for now
 /// (see that class's own doc): there is no backend endpoint yet to redeem a Play purchase, so
 /// <see cref="CoinsViewModel.CanBuy"/> is false today regardless of the device. Each row's
 /// <c>IsEnabled</c> binding already reflects that (blocking the gesture recognizer), and the

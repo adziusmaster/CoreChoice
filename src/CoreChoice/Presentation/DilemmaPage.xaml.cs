@@ -27,11 +27,16 @@ public partial class DilemmaPage : ContentPage, IQueryAttributable
     }
 
     /// <summary>Receives the persona chosen on <see cref="PersonaPage"/>, passed back through the
-    /// Shell navigation parameters on its way to "..".</summary>
+    /// Shell navigation parameters on its way to "..", or a past decision from
+    /// <see cref="AnswerDetailPage"/>'s "Ask this again" — see
+    /// <see cref="DilemmaViewModel.LoadFromPastDecision"/> for why that never spends a coin.</summary>
     public void ApplyQueryAttributes(IDictionary<string, object> query)
     {
         if (query.TryGetValue("SelectedPersona", out var value) && value is Application.PersonaSummary persona)
             _viewModel.Persona = persona;
+
+        if (query.TryGetValue("ReaskDecision", out var decisionValue) && decisionValue is Application.PastDecision decision)
+            _viewModel.LoadFromPastDecision(decision);
     }
 
     private async void OnSpeakOptionAClicked(object? sender, EventArgs e) =>

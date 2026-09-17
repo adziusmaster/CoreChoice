@@ -34,6 +34,11 @@ public class AnalysisViewModelTests
         return client;
     }
 
+    /// <summary>Builds a view model with a harmless, do-nothing <see cref="IDecisionHistory"/>
+    /// double, for every test that is not itself about the recording behaviour below.</summary>
+    private static AnalysisViewModel BuildViewModel(IDecisionClient client, IDecisionHistory? history = null) =>
+        new(client, history ?? Substitute.For<IDecisionHistory>());
+
     // ===== Successful call =====
 
     [Fact]
@@ -42,7 +47,7 @@ public class AnalysisViewModelTests
         // Arrange
         var analysis = BuildAnalysis(confidence: 75);
         var client = StubClient(new AnalysedDecision(analysis, Balance: 9));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -61,7 +66,7 @@ public class AnalysisViewModelTests
     {
         // Arrange
         var client = StubClient(new AnalysedDecision(BuildAnalysis(60), Balance: 4));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -77,7 +82,7 @@ public class AnalysisViewModelTests
         var gate = new TaskCompletionSource<AnalysedDecision>();
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>()).Returns(gate.Task);
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         var askTask = vm.AskAsync(BuildRequest());
@@ -98,7 +103,7 @@ public class AnalysisViewModelTests
         var gate = new TaskCompletionSource<AnalysedDecision>();
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>()).Returns(gate.Task);
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         var askTask = vm.AskAsync(BuildRequest(ProfileWithOpenness(90)));
@@ -135,7 +140,7 @@ public class AnalysisViewModelTests
         // Arrange
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>()).ThrowsForAnyArgs(thrown);
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -160,7 +165,7 @@ public class AnalysisViewModelTests
         _ = expectedCanRetry;
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>()).ThrowsForAnyArgs(thrown);
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -185,7 +190,7 @@ public class AnalysisViewModelTests
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
             .ThrowsForAnyArgs(new DecisionUnavailableException("down"));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -201,7 +206,7 @@ public class AnalysisViewModelTests
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
             .ThrowsForAnyArgs(new InvalidOperationException("NullReferenceException at CoreChoiceApiClient.cs:42"));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -225,7 +230,7 @@ public class AnalysisViewModelTests
             cts.Cancel();
             return new OperationCanceledException(cts.Token);
         });
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         Func<Task> act = async () => await vm.AskAsync(BuildRequest(), cts.Token);
@@ -249,7 +254,7 @@ public class AnalysisViewModelTests
         cts.Cancel();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
             .ThrowsForAnyArgs(new InvalidOperationException("a genuine bug, unrelated to cancellation"));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest(), cts.Token);
@@ -277,7 +282,7 @@ public class AnalysisViewModelTests
     {
         // Arrange
         var client = StubClient(new AnalysedDecision(BuildAnalysis(confidence), Balance: 3));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -295,7 +300,7 @@ public class AnalysisViewModelTests
     {
         // Arrange
         var client = StubClient(new AnalysedDecision(BuildAnalysis(confidence), Balance: 0));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest());
@@ -312,7 +317,7 @@ public class AnalysisViewModelTests
         // Arrange — a HIGH trait is the one direction WaitingLineComposer names plainly (see its
         // own tests for the low-direction case, which deliberately does not name the trait).
         var client = StubClient(new AnalysedDecision(BuildAnalysis(60), Balance: 1));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest(ProfileWithOpenness(90)));
@@ -326,7 +331,7 @@ public class AnalysisViewModelTests
     {
         // Arrange
         var client = StubClient(new AnalysedDecision(BuildAnalysis(60), Balance: 1));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.AskAsync(BuildRequest(OceanProfile.None));
@@ -346,7 +351,7 @@ public class AnalysisViewModelTests
         var client = Substitute.For<IDecisionClient>();
         client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
             .ThrowsForAnyArgs(new DecisionUnavailableException("down"));
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
         await vm.AskAsync(request);
         client.ClearReceivedCalls();
 
@@ -368,7 +373,7 @@ public class AnalysisViewModelTests
     {
         // Arrange
         var client = Substitute.For<IDecisionClient>();
-        var vm = new AnalysisViewModel(client);
+        var vm = BuildViewModel(client);
 
         // Act
         await vm.RetryAsync();
@@ -376,5 +381,67 @@ public class AnalysisViewModelTests
         // Assert
         await client.DidNotReceive().AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>());
         vm.HasAnalysis.Should().BeFalse();
+    }
+
+    // ===== Recording to history =====
+
+    [Fact]
+    public async Task AskAsync_OnSuccess_ShouldRecordTheAnsweredDecisionToHistory()
+    {
+        // Arrange
+        var analysis = BuildAnalysis(75);
+        var client = StubClient(new AnalysedDecision(analysis, Balance: 9));
+        var history = Substitute.For<IDecisionHistory>();
+        var vm = BuildViewModel(client, history);
+        var request = BuildRequest();
+
+        // Act
+        await vm.AskAsync(request);
+
+        // Assert — recorded with exactly what was asked and exactly what came back.
+        await history.Received(1).RecordAsync(
+            request.Dilemma, request.Persona, request.Weight, analysis, Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task AskAsync_WhenHistoryRecordingThrows_ShouldStillExposeTheAnalysis()
+    {
+        // Arrange — the person already has the answer and has already spent the coin for it by
+        // this point; a full disk or a locked database file must never take either away.
+        var analysis = BuildAnalysis(75);
+        var client = StubClient(new AnalysedDecision(analysis, Balance: 9));
+        var history = Substitute.For<IDecisionHistory>();
+        history.RecordAsync(
+                Arg.Any<Dilemma>(), Arg.Any<PersonaId>(), Arg.Any<DecisionWeight>(),
+                Arg.Any<DecisionAnalysis>(), Arg.Any<CancellationToken>())
+            .ThrowsForAnyArgs(new InvalidOperationException("disk full"));
+        var vm = BuildViewModel(client, history);
+
+        // Act
+        await vm.AskAsync(BuildRequest());
+
+        // Assert
+        vm.Analysis.Should().Be(analysis);
+        vm.Balance.Should().Be(9);
+        vm.HasAnalysis.Should().BeTrue();
+        vm.HasError.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AskAsync_OnFailure_ShouldNeverRecordAnything()
+    {
+        // Arrange — nothing was answered, so nothing belongs in history.
+        var client = Substitute.For<IDecisionClient>();
+        client.AnalyseAsync(Arg.Any<DecisionRequest>(), Arg.Any<CancellationToken>())
+            .ThrowsForAnyArgs(new DecisionUnavailableException("down"));
+        var history = Substitute.For<IDecisionHistory>();
+        var vm = BuildViewModel(client, history);
+
+        // Act
+        await vm.AskAsync(BuildRequest());
+
+        // Assert
+        await history.DidNotReceiveWithAnyArgs().RecordAsync(
+            default!, default, default, default!, default);
     }
 }

@@ -12,6 +12,12 @@ namespace CoreChoice.Presentation;
 /// converter or helper that touched <c>Microsoft.Maui.*</c> here would silently drop out of test
 /// coverage entirely.
 ///
+/// Every successful call is also recorded to <see cref="IDecisionHistory"/> — see the try/catch
+/// inside <see cref="AskAsync"/>'s success branch — the moment the answer is known, so no later
+/// screen can be built without a decision reaching history. That write is deliberately
+/// best-effort: the person already has the answer on screen and has already spent the coin for
+/// it, so a history-write failure must never look like either was taken away.
+///
 /// Every failure path is written to say one thing explicitly: the coin was not spent. The backend
 /// refunds on every failure after the spend, but a person who cannot see that happened assumes the
 /// worst, and that assumption costs more trust than the error itself — so <see cref="AskAsync"/>
@@ -26,7 +32,7 @@ namespace CoreChoice.Presentation;
 /// happened to already be cancelled fell through uncaught and crashed the screen instead of
 /// showing the reassurance above.
 /// </summary>
-public sealed partial class AnalysisViewModel(IDecisionClient client) : ObservableObject
+public sealed partial class AnalysisViewModel(IDecisionClient client, IDecisionHistory history) : ObservableObject
 {
     [ObservableProperty]
     private bool isWorking;
@@ -129,6 +135,22 @@ public sealed partial class AnalysisViewModel(IDecisionClient client) : Observab
             var result = await client.AnalyseAsync(request, ct);
             Analysis = result.Analysis;
             Balance = result.Balance;
+
+            // Recorded the instant the answer is known — the moment no later screen can miss it —
+            // and deliberately with CancellationToken.None: the person already has both the answer
+            // on screen and the spent coin by this point, so a slow disk, a locked database file,
+            // or the caller navigating away right now must never look like either was taken back.
+            // Nothing from this call is allowed to reach the person: not an error message, not a
+            // thrown exception, nothing.
+            try
+            {
+                await history.RecordAsync(request.Dilemma, request.Persona, request.Weight, result.Analysis, CancellationToken.None);
+            }
+            catch (Exception)
+            {
+                // Best-effort only. The answer the person already has is worth more than a
+                // perfect history, so a storage failure here is swallowed, never surfaced.
+            }
         }
         catch (InsufficientCoinsException)
         {

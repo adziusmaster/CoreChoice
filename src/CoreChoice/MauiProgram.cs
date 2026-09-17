@@ -70,6 +70,7 @@ public static class MauiProgram
         builder.Services.AddDbContextFactory<LocalDbContext>(options =>
             options.UseSqlite($"Data Source={databasePath}"));
         builder.Services.AddSingleton<IProfileRepository, SqliteProfileRepository>();
+        builder.Services.AddSingleton<IDecisionHistory, SqliteDecisionHistory>();
 
         // The personality-test flow: intro, the 50 items, and the free result.
         builder.Services.AddTransient<TestIntroViewModel>();
@@ -88,6 +89,13 @@ public static class MauiProgram
         // The payoff: the waiting screen and the answer itself.
         builder.Services.AddTransient<AnalysisViewModel>();
         builder.Services.AddTransient<AnalysisPage>();
+
+        // The person's own record of what they have asked: the list tab and the full-answer
+        // detail it opens onto.
+        builder.Services.AddTransient<AnswersViewModel>();
+        builder.Services.AddTransient<AnswersPage>();
+        builder.Services.AddTransient<AnswerDetailViewModel>();
+        builder.Services.AddTransient<AnswerDetailPage>();
 
         // The analyses/coins store. Real Google Play Billing on Android; buying itself is
         // disabled for now (see CoinsViewModel's own doc) since there is no backend endpoint yet

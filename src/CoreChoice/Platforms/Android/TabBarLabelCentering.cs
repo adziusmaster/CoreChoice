@@ -9,8 +9,8 @@ namespace CoreChoice.Platforms.Android;
 /// <summary>
 /// Shell's bottom tab bar is a stock Material <see cref="BottomNavigationView"/> — native chrome
 /// with no XAML surface, so it cannot be restyled from a page or a ResourceDictionary. Its item
-/// layout reserves vertical space for an icon that none of the four tabs (Ask/Profile/Analyses/
-/// Settings) has, so the label sits low in the bar rather than centred — most visible now that the
+/// layout reserves vertical space for an icon that none of the five tabs (Ask/Answers/Profile/
+/// Coins/Settings) has, so the label sits low in the bar rather than centred — most visible now that the
 /// bar is a fixed, correct 147px tall (see <c>MainActivity</c>'s inset listener; this class does not
 /// touch that height, only where the label sits inside it).
 ///
@@ -67,8 +67,8 @@ internal static class TabBarLabelCentering
         if (deltas.Count == 0)
             return;
 
-        // All four items should agree; the middle value is robust to any one item's label not
-        // having settled its final layout yet.
+        // All items should agree; the middle value is robust to any one item's label not having
+        // settled its final layout yet.
         deltas.Sort();
         var delta = deltas[deltas.Count / 2];
         if (delta == 0)

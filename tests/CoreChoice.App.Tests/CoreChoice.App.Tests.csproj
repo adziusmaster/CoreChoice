@@ -69,5 +69,11 @@
     <!-- Task 12: the pure decision behind AppShell's hardware-back-button handling and the bottom
          tab bar, both MAUI-free by design. -->
     <Compile Include="..\..\src\CoreChoice\Presentation\BackNavigation.cs" Link="Linked\BackNavigation.cs" />
+    <!-- Task 19: decision history — the Answers tab and the full-answer detail it opens onto.
+         All four MAUI-free by design, same discipline as every other file linked above. -->
+    <Compile Include="..\..\src\CoreChoice\Presentation\DecisionWeightLabel.cs" Link="Linked\DecisionWeightLabel.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\PastDecisionRow.cs" Link="Linked\PastDecisionRow.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\AnswersViewModel.cs" Link="Linked\AnswersViewModel.cs" />
+    <Compile Include="..\..\src\CoreChoice\Presentation\AnswerDetailViewModel.cs" Link="Linked\AnswerDetailViewModel.cs" />
   </ItemGroup>
 </Project>

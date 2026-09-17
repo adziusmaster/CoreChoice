@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
+             x:Class="CoreChoice.Presentation.AnswerDetailPage"
+             x:DataType="presentation:AnswerDetailViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <Grid>
+        <controls:PageShell IsVisible="{Binding HasDecision}">
+            <controls:PageShell.Header>
+                <Label Text="&#8249;  Back" FontFamily="DMSans" FontSize="14" TextColor="{DynamicResource Muted}"
+                       MinimumHeightRequest="44" VerticalTextAlignment="Center" Margin="0,0,0,4">
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Tapped="OnBackTapped" />
+                    </Label.GestureRecognizers>
+                </Label>
+            </controls:PageShell.Header>
+
+            <controls:PageShell.MainContent>
+                <VerticalStackLayout Spacing="0">
+
+                    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+                        <HorizontalStackLayout Grid.Column="0" Spacing="9" VerticalOptions="Center">
+                            <Ellipse WidthRequest="6" HeightRequest="6" Fill="{DynamicResource Accent}" />
+                            <Label Text="{Binding PersonaDisplayName}" FontFamily="DMSans" FontSize="13"
+                                   TextColor="{DynamicResource Muted}" />
+                        </HorizontalStackLayout>
+                        <Label Grid.Column="1" Text="{Binding WeightLabel}"
+                               FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}"
+                               VerticalOptions="Center" />
+                    </Grid>
+
+                    <Label FontFamily="Lora" FontSize="15" LineHeight="1.5"
+                           TextColor="{DynamicResource InkSoft}" LineBreakMode="WordWrap" Margin="0,0,0,4">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="{Binding OptionA}" />
+                                <Span Text="  vs  " TextColor="{DynamicResource Faint}" />
+                                <Span Text="{Binding OptionB}" />
+                            </FormattedString>
+                        </Label.FormattedText>
+                    </Label>
+
+                    <Label Text="{Binding Context}" IsVisible="{Binding HasContext}"
+                           FontFamily="DMSans" FontSize="13" LineHeight="1.5"
+                           TextColor="{DynamicResource Faint}" LineBreakMode="WordWrap" Margin="0,0,0,4" />
+
+                    <Label Text="{Binding AskedAtDisplay}"
+                           FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}"
+                           Margin="0,0,0,26" />
+
+                    <!-- The answer body itself — shared with AnalysisPage rather than a second
+                         rendering of the same shape. Always shows both sides here: a reopened
+                         past decision has no "Both sides" toggle to hide half of it behind. -->
+                    <controls:AnswerView Analysis="{Binding Analysis}" Verdict="{Binding Verdict}"
+                                          IsVerdictStrong="{Binding IsVerdictStrong}" ShowBothSides="True" />
+
+                </VerticalStackLayout>
+            </controls:PageShell.MainContent>
+
+            <controls:PageShell.Footer>
+                <VerticalStackLayout Spacing="10" Margin="0,16,0,0">
+                    <Button Text="Ask this again" Style="{StaticResource PrimaryButton}"
+                            Clicked="OnAskAgainClicked" />
+                    <Button Text="Delete this answer" Style="{StaticResource SecondaryButton}"
+                            Clicked="OnDeleteClicked" />
+                </VerticalStackLayout>
+            </controls:PageShell.Footer>
+        </controls:PageShell>
+
+        <!-- Not-found state: the entry was deleted elsewhere, or the id no longer resolves.
+             Deliberately not PageShell — see AnalysisPage.xaml's own comment on its error state
+             for why a short, centered message needs a Grid "*" row rather than a ScrollView. -->
+        <Grid RowDefinitions="*,Auto" Padding="24,60,24,24" IsVisible="{Binding NotFound}">
+            <VerticalStackLayout Grid.Row="0" Spacing="16" VerticalOptions="Center">
+                <Label Text="This answer is no longer here."
+                       FontFamily="Lora" FontSize="20" LineHeight="1.4"
+                       TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap" />
+            </VerticalStackLayout>
+            <Button Grid.Row="1" Text="Back to your answers" Style="{StaticResource PrimaryButton}"
+                    Clicked="OnBackTapped" />
+        </Grid>
+
+        <controls:ConfirmationDialog x:Name="DeleteConfirmation" />
+    </Grid>
+</ContentPage>

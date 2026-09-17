@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:presentation="clr-namespace:CoreChoice.Presentation"
+             xmlns:controls="clr-namespace:CoreChoice.Presentation.Controls"
+             x:Class="CoreChoice.Presentation.AnswersPage"
+             x:DataType="presentation:AnswersViewModel"
+             Style="{StaticResource PageStyle}"
+             Shell.NavBarIsVisible="False">
+
+    <controls:PageShell>
+        <controls:PageShell.MainContent>
+            <VerticalStackLayout Spacing="0">
+
+                <Label Text="Your answers"
+                       FontFamily="LoraMedium" FontSize="28" LineHeight="1.26" CharacterSpacing="-0.2"
+                       TextColor="{DynamicResource Ink}" Margin="0,0,0,8" />
+
+                <Label Text="Every decision you have asked, kept on this phone."
+                       FontFamily="DMSans" FontSize="14" LineHeight="1.55"
+                       TextColor="{DynamicResource Muted}" Margin="0,0,0,28" />
+
+                <!-- Empty state: better than a blank page for someone who has asked nothing yet. -->
+                <Border Style="{StaticResource CardBorder}" Padding="20" IsVisible="{Binding IsEmpty}">
+                    <Label Text="Answers you ask for will show up here, with the verdict and when you asked."
+                           FontFamily="Lora" FontSize="15" LineHeight="1.55"
+                           TextColor="{DynamicResource Muted}" LineBreakMode="WordWrap" />
+                </Border>
+
+                <VerticalStackLayout Spacing="0" IsVisible="{Binding HasDecisions}"
+                                      BindableLayout.ItemsSource="{Binding Decisions}">
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="presentation:PastDecisionRow">
+                            <VerticalStackLayout Spacing="0">
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"
+                                      MinimumHeightRequest="44" Padding="0,14">
+                                    <Grid.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnRowTapped" />
+                                    </Grid.GestureRecognizers>
+                                    <VerticalStackLayout Grid.Column="0" Spacing="5">
+                                        <Label FontFamily="Lora" FontSize="15.5" LineHeight="1.4"
+                                               TextColor="{DynamicResource Ink}" LineBreakMode="WordWrap">
+                                            <Label.FormattedText>
+                                                <FormattedString>
+                                                    <Span Text="{Binding OptionA}" />
+                                                    <Span Text="  vs  " FontFamily="DMSans" TextColor="{DynamicResource Faint}" />
+                                                    <Span Text="{Binding OptionB}" />
+                                                </FormattedString>
+                                            </Label.FormattedText>
+                                        </Label>
+                                        <HorizontalStackLayout Spacing="9">
+                                            <Label Text="{Binding AskedAtDisplay}" FontFamily="DMSans" FontSize="12.5"
+                                                   TextColor="{DynamicResource Faint}" />
+                                            <Label Text="·" FontFamily="DMSans" FontSize="12.5" TextColor="{DynamicResource Faint}" />
+                                            <Label Text="{Binding Verdict}" FontFamily="DMSansMedium" FontSize="12.5"
+                                                   TextColor="{DynamicResource Accent}" />
+                                        </HorizontalStackLayout>
+                                    </VerticalStackLayout>
+                                    <Label Grid.Column="1" Text="&#8250;" FontFamily="DMSans" FontSize="18"
+                                           TextColor="{DynamicResource Faint}" VerticalOptions="Center" />
+                                </Grid>
+                                <BoxView Color="{DynamicResource LineSoft}" HeightRequest="1" HorizontalOptions="Fill" />
+                            </VerticalStackLayout>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </VerticalStackLayout>
+
+            </VerticalStackLayout>
+        </controls:PageShell.MainContent>
+    </controls:PageShell>
+
+</ContentPage>

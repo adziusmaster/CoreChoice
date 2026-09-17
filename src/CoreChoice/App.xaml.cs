@@ -22,13 +22,14 @@ public partial class App : Microsoft.Maui.Controls.Application
         services.GetRequiredService<ThemeService>().Apply();
     }
 
-    // The four tab-root pages are resolved from the container (rather than left for AppShell.xaml's
+    // The five tab-root pages are resolved from the container (rather than left for AppShell.xaml's
     // own ShellContent/DataTemplate to construct) so each is guaranteed to receive its view model
     // by constructor injection.
     protected override Window CreateWindow(IActivationState? activationState) =>
         new(new AppShell(
             _services.GetRequiredService<TestIntroPage>(),
             _services.GetRequiredService<DilemmaPage>(),
+            _services.GetRequiredService<AnswersPage>(),
             _services.GetRequiredService<CoinsPage>(),
             _services.GetRequiredService<SettingsPage>(),
             _services.GetRequiredService<ICoinLedgerClient>()));
