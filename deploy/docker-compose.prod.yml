@@ -41,6 +41,9 @@ services:
       Security__IpHashSalt: ${IP_HASH_SALT:?set IP_HASH_SALT in .env}
       Coins__FirstContactGrant: ${FIRST_CONTACT_GRANT:-5}
       Coins__ProfileCompletionGrant: ${PROFILE_COMPLETION_GRANT:-5}
+      # Free grants per hashed origin per week. Two per new device, so this is roughly
+      # "people on one connection, doubled". Raise it while testers share an office network.
+      Coins__MaxGrantsPerOrigin: ${MAX_GRANTS_PER_ORIGIN:-20}
     volumes:
       # The coin ledger persists across redeploys.
       - corechoice-data:/data

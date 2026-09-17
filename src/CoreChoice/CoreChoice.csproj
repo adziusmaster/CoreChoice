@@ -11,7 +11,7 @@
 
     <ApplicationTitle>CoreChoice</ApplicationTitle>
     <ApplicationId>com.adziusmaster.corechoice</ApplicationId>
-    <ApplicationDisplayVersion>0.1.0</ApplicationDisplayVersion>
+    <ApplicationDisplayVersion>1.0.0</ApplicationDisplayVersion>
     <ApplicationVersion>1</ApplicationVersion>
 
     <SupportedOSPlatformVersion>24.0</SupportedOSPlatformVersion>
