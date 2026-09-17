@@ -12,9 +12,6 @@
         <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Spacing="0">
 
-                <Label Text="YOURS, FREE, PERMANENTLY" Style="{StaticResource MicroLabel}"
-                       TextColor="{DynamicResource Accent}" FontSize="12" Margin="0,0,0,12" />
-
                 <Label Text="This is how you tend to decide."
                        FontFamily="LoraMedium" FontSize="28" LineHeight="1.28" CharacterSpacing="-0.2"
                        TextColor="{DynamicResource Ink}" Margin="0,0,0,20" />
