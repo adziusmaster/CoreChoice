@@ -157,12 +157,16 @@
                  bindings, which do track the swap. The inert one is deliberately inert-LOOKING —
                  the accent fill made a disabled button invite a tap that did nothing. -->
             <Grid>
-                <Button Text="Think it through" Style="{StaticResource PrimaryButton}"
-                        IsVisible="{Binding CanSubmit}" Clicked="OnThinkItThroughClicked" />
+                <!-- ORDER MATTERS. The inert button is declared FIRST so the live one sits above
+                     it: with the inert one last it was on top and swallowed every tap, leaving the
+                     submit button visibly enabled and completely dead. IsVisible alone did not save
+                     it — the overlay still took the touch. -->
                 <Button Text="Think it through" Style="{StaticResource PrimaryButton}"
                         BackgroundColor="{DynamicResource Surface}" TextColor="{DynamicResource Faint}"
-                        IsEnabled="False"
+                        IsEnabled="False" InputTransparent="True"
                         IsVisible="{Binding CanSubmit, Converter={StaticResource InvertedBoolConverter}}" />
+                <Button Text="Think it through" Style="{StaticResource PrimaryButton}"
+                        IsVisible="{Binding CanSubmit}" Clicked="OnThinkItThroughClicked" />
             </Grid>
         </VerticalStackLayout>
         </controls:PageShell.Footer>
