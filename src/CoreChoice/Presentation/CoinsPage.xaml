@@ -134,6 +134,44 @@
                        FontFamily="DMSans" FontSize="13" LineHeight="1.5" TextColor="{DynamicResource Muted}"
                        LineBreakMode="WordWrap" Margin="0,0,0,4" />
 
+                <Label Text="HAVE A CODE?" Style="{StaticResource MicroLabel}"
+                       TextColor="{DynamicResource Faint}" FontSize="12" Margin="0,14,0,12" />
+
+                <Border Style="{StaticResource CardBorder}" Padding="18,16" Margin="0,0,0,4">
+                    <VerticalStackLayout Spacing="14">
+                        <Entry Text="{Binding PromoCode}"
+                               Placeholder="5-character code"
+                               PlaceholderColor="{DynamicResource Faint}"
+                               FontFamily="DMSansMedium" FontSize="17" CharacterSpacing="1.6"
+                               TextColor="{DynamicResource Ink}" BackgroundColor="Transparent"
+                               MaxLength="5" IsSpellCheckEnabled="False" IsTextPredictionEnabled="False"
+                               HeightRequest="44" />
+
+                        <!-- Two buttons rather than one with a disabled VisualState, same fix as
+                             DilemmaPage's "Think it through" button: a DynamicResource colour inside
+                             a trigger/state setter resolves once and goes stale when the palette is
+                             swapped. ORDER MATTERS — the inert button is declared FIRST so the live
+                             one sits above it. Declaring the inert one last previously left it on
+                             top, swallowing every tap while invisible (commit 8c77129: the submit
+                             button looked enabled and was completely dead). -->
+                        <Grid HeightRequest="44">
+                            <Button Text="Redeem" Style="{StaticResource PrimaryButton}"
+                                    HeightRequest="44" FontSize="14"
+                                    BackgroundColor="{DynamicResource Surface}" TextColor="{DynamicResource Faint}"
+                                    IsEnabled="False" InputTransparent="True"
+                                    IsVisible="{Binding CanRedeem, Converter={StaticResource InvertedBoolConverter}}" />
+                            <Button Text="Redeem" Style="{StaticResource PrimaryButton}"
+                                    HeightRequest="44" FontSize="14"
+                                    IsVisible="{Binding CanRedeem}" Clicked="OnRedeemTapped" />
+                        </Grid>
+
+                        <Label Text="{Binding RedeemMessage}"
+                               IsVisible="{Binding RedeemMessage, Converter={StaticResource IsNotEmptyConverter}}"
+                               FontFamily="DMSans" FontSize="13" LineHeight="1.5" TextColor="{DynamicResource Muted}"
+                               LineBreakMode="WordWrap" />
+                    </VerticalStackLayout>
+                </Border>
+
             </VerticalStackLayout>
         </controls:PageShell.MainContent>
 

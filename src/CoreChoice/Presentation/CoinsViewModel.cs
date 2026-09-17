@@ -108,6 +108,34 @@ public sealed partial class CoinsViewModel(IBillingService billing, ICoinLedgerC
     [ObservableProperty]
     private string? message;
 
+    /// <summary>The code as typed. Not case-normalised here — the server normalises, and showing
+    /// back exactly what was typed avoids a distracting case-flip mid-entry.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRedeem))]
+    private string promoCode = string.Empty;
+
+    /// <summary>True while a redemption call is in flight. Folded into <see cref="CanRedeem"/>
+    /// rather than kept separate: the endpoint is rate-limited (10/minute/IP) precisely because
+    /// short codes are guessable, so the button must go inert for the duration of the call rather
+    /// than let a second tap queue up another request.</summary>
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(CanRedeem))]
+    private bool isRedeeming;
+
+    /// <summary>Result of the last redemption attempt, in plain language — set for every outcome,
+    /// success included, since "10 analyses added" is exactly as much this page's job to say as
+    /// "that code has already been used on this device".</summary>
+    [ObservableProperty]
+    private string? redeemMessage;
+
+    /// <summary>Mirrors <see cref="DilemmaViewModel.CanSubmit"/>'s gating: the button stays inert
+    /// until the field holds a plausible code, so a half-typed code can never be submitted (and,
+    /// combined with <see cref="IsRedeeming"/>, so a second tap cannot queue up while one is still
+    /// in flight against a rate-limited endpoint).</summary>
+    public bool CanRedeem => !IsRedeeming && PromoCode.Trim().Length == PromoCodeLength;
+
+    private const int PromoCodeLength = 5;
+
     /// <summary>
     /// Loads the current balance and the packs available to buy. The two are independent: a
     /// failure fetching one never blocks the other, since either can fail for its own unrelated
@@ -210,4 +238,62 @@ public sealed partial class CoinsViewModel(IBillingService billing, ICoinLedgerC
         // cancellable by whatever is racing against it.
         await billing.ConsumeAsync(ticket.PurchaseToken, CancellationToken.None);
     }
+
+    /// <summary>
+    /// Redeems <see cref="PromoCode"/> against the ledger. Never retries on failure — the endpoint
+    /// is rate-limited (10/minute/IP) precisely because short codes are guessable, so a retry loop
+    /// here would risk locking the person out entirely; a genuine failure is reported once and left
+    /// for the person to act on. Deliberately does not require <see cref="CanRedeem"/> to already be
+    /// true: the page's button is gated on it, but this guards the same way regardless of caller.
+    /// </summary>
+    public async Task RedeemPromoCodeAsync(CancellationToken ct = default)
+    {
+        if (!CanRedeem)
+            return;
+
+        var code = PromoCode.Trim();
+        RedeemMessage = null;
+        IsRedeeming = true;
+        try
+        {
+            PromoRedemptionResult result;
+            try
+            {
+                result = await ledger.RedeemPromoCodeAsync(code, ct);
+            }
+            catch (OperationCanceledException) when (ct.IsCancellationRequested)
+            {
+                throw;
+            }
+            catch (Exception)
+            {
+                RedeemMessage = "That could not be checked right now. Please try again in a moment.";
+                return;
+            }
+
+            RedeemMessage = DescribeRedemption(result);
+            if (result.Outcome == PromoRedemptionOutcome.Redeemed)
+            {
+                Balance = result.Balance;
+                PromoCode = string.Empty;
+            }
+        }
+        finally
+        {
+            IsRedeeming = false;
+        }
+    }
+
+    private static string DescribeRedemption(PromoRedemptionResult result) => result.Outcome switch
+    {
+        PromoRedemptionOutcome.Redeemed => result.CoinsGranted == 1
+            ? $"Added 1 analysis. Balance is now {result.Balance}."
+            : $"Added {result.CoinsGranted} analyses. Balance is now {result.Balance}.",
+        PromoRedemptionOutcome.InvalidCode => "That code was not recognised.",
+        PromoRedemptionOutcome.RevokedCode => "That code has been revoked and can no longer be used.",
+        PromoRedemptionOutcome.ExpiredCode => "That code has expired.",
+        PromoRedemptionOutcome.AlreadyRedeemed => "That code has already been used on this device.",
+        PromoRedemptionOutcome.Malformed => result.Detail ?? "That code is not valid.",
+        _ => "That code could not be redeemed.",
+    };
 }

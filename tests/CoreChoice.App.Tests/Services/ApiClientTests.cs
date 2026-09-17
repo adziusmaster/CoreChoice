@@ -415,4 +415,158 @@ public class ApiClientTests
         // Assert
         await act.Should().ThrowAsync<MalformedAdvisorResponseException>();
     }
+
+    // ===== RedeemPromoCodeAsync =====
+    //
+    // Redemption outcomes are expected results, not exceptions: the caller needs to tell a revoked
+    // code apart from an already-redeemed one to say something useful, so every server-defined
+    // outcome below maps to a PromoRedemptionResult rather than a thrown exception. Only a genuine
+    // transport failure (unreachable server, timeout, or an unexpected status like 429 from the
+    // endpoint's own rate limit) still surfaces as the usual exceptions.
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheServerGrantsCoins_ShouldReturnRedeemedWithTheGrantAndBalance()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"coinsGranted":10,"balance":35}"""));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("C779K");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.Redeemed);
+        result.CoinsGranted.Should().Be(10);
+        result.Balance.Should().Be(35);
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_When404_ShouldReturnInvalidCode()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"error":"invalid_code"}""", HttpStatusCode.NotFound));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("ZZZZZ");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.InvalidCode);
+        result.CoinsGranted.Should().Be(0);
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenRevoked_ShouldReturnRevokedCode()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"error":"revoked_code"}""", HttpStatusCode.BadRequest));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("REVOK");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.RevokedCode);
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenExpired_ShouldReturnExpiredCode()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"error":"expired_code"}""", HttpStatusCode.BadRequest));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("OLDCD");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.ExpiredCode);
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenAlreadyRedeemedByThisDevice_ShouldReturnAlreadyRedeemed()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"error":"already_redeemed"}""", HttpStatusCode.Conflict));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("LZQTS");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.AlreadyRedeemed);
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheCodeIsTheWrongLength_ShouldReturnMalformedWithTheServersMessage()
+    {
+        // Arrange — the server's own free-text sentence for this case, not a fixed error code.
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json(
+                """{"error":"A code must be 5 characters."}""", HttpStatusCode.BadRequest));
+        var client = Build(handler);
+
+        // Act
+        var result = await client.RedeemPromoCodeAsync("AB");
+
+        // Assert
+        result.Outcome.Should().Be(PromoRedemptionOutcome.Malformed);
+        result.Detail.Should().Be("A code must be 5 characters.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_ShouldPostTheDeviceIdAndCodeToApiPromoRedeem()
+    {
+        // Arrange
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"coinsGranted":10,"balance":35}"""));
+        var client = Build(handler);
+
+        // Act
+        await client.RedeemPromoCodeAsync("C779K");
+
+        // Assert
+        var request = handler.Requests.Single();
+        request.Method.Should().Be(HttpMethod.Post);
+        request.RequestUri!.AbsolutePath.Should().Be("/api/promo/redeem");
+        using var doc = JsonDocument.Parse(handler.RequestBodies.Single());
+        doc.RootElement.GetProperty("deviceId").GetGuid().Should().Be(DeviceId);
+        doc.RootElement.GetProperty("code").GetString().Should().Be("C779K");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenRateLimited_ShouldThrowDecisionUnavailable()
+    {
+        // Arrange — the endpoint is rate-limited (10/minute/IP) because short codes are guessable;
+        // a 429 here is a genuine transport-level failure, not one of the outcomes the server
+        // documents for a redemption attempt, so it must still surface as an exception rather than
+        // silently mapping to some PromoRedemptionOutcome.
+        var handler = new StubHttpMessageHandler(
+            StubHttpMessageHandler.Json("""{"error":"Too many requests."}""", HttpStatusCode.TooManyRequests));
+        var client = Build(handler);
+
+        // Act
+        Func<Task> act = async () => await client.RedeemPromoCodeAsync("C779K");
+
+        // Assert
+        await act.Should().ThrowAsync<DecisionUnavailableException>();
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheServerIsUnreachable_ShouldThrowDecisionUnavailable()
+    {
+        // Arrange
+        var client = BuildThrowing(new HttpRequestException("no signal"));
+
+        // Act
+        Func<Task> act = async () => await client.RedeemPromoCodeAsync("C779K");
+
+        // Assert
+        await act.Should().ThrowAsync<DecisionUnavailableException>();
+    }
 }

@@ -62,6 +62,50 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         return new GrantResult(dto.Granted, dto.Balance, dto.Reason);
     }
 
+    /// <summary>
+    /// Calls <c>POST /api/promo/redeem</c>. Redemption outcomes are expected results the caller
+    /// must tell apart, not exceptions: a revoked, expired, unknown or already-redeemed code is a
+    /// normal answer from the server, so this reads the status code itself via
+    /// <see cref="SendRawAsync"/> instead of going through <see cref="SendAsync"/>'s automatic
+    /// throw-on-failure. Anything the server can return that is not one of those expected shapes
+    /// (e.g. 429 from the endpoint's own rate limit, or the server being unreachable) still comes
+    /// out as the usual exceptions via <see cref="ThrowForFailureAsync"/>.
+    /// </summary>
+    public async Task<PromoRedemptionResult> RedeemPromoCodeAsync(string code, CancellationToken ct = default)
+    {
+        var deviceId = await deviceIdentity.GetOrCreateAsync(ct);
+        var response = await SendRawAsync(HttpMethod.Post, "api/promo/redeem", new { deviceId, code }, ct);
+
+        switch ((int)response.StatusCode)
+        {
+            case 200:
+                var dto = await ReadAsync<PromoRedeemDto>(response, ct);
+                return PromoRedemptionResult.Redeemed(dto.CoinsGranted, dto.Balance);
+
+            case 404:
+                return PromoRedemptionResult.Failed(PromoRedemptionOutcome.InvalidCode);
+
+            case 409:
+                return PromoRedemptionResult.Failed(PromoRedemptionOutcome.AlreadyRedeemed);
+
+            case 400:
+                var error = await ReadErrorFieldAsync(response, ct);
+                return error switch
+                {
+                    "revoked_code" => PromoRedemptionResult.Failed(PromoRedemptionOutcome.RevokedCode),
+                    "expired_code" => PromoRedemptionResult.Failed(PromoRedemptionOutcome.ExpiredCode),
+                    _ => PromoRedemptionResult.Failed(PromoRedemptionOutcome.Malformed, error),
+                };
+
+            default:
+                await ThrowForFailureAsync(response, ct);
+                // ThrowForFailureAsync always throws for a status code that reaches its default
+                // branch (EnsureSuccessStatusCode); this is unreachable but keeps the compiler happy.
+                throw new MalformedAdvisorResponseException(
+                    $"unexpected status {(int)response.StatusCode} from promo redemption");
+        }
+    }
+
     public async Task<IReadOnlyList<PersonaSummary>> GetPersonasAsync(CancellationToken ct = default)
     {
         var response = await SendAsync(HttpMethod.Get, "api/personas", body: null, ct);
@@ -115,6 +159,24 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
     private async Task<HttpResponseMessage> SendAsync(
         HttpMethod method, string path, object? body, CancellationToken ct)
     {
+        var response = await SendRawAsync(method, path, body, ct);
+
+        if (!response.IsSuccessStatusCode)
+            await ThrowForFailureAsync(response, ct);
+
+        return response;
+    }
+
+    /// <summary>
+    /// Sends the request and translates genuine transport failures (unreachable server, timeout)
+    /// into <see cref="DecisionUnavailableException"/>, but returns whatever status code the server
+    /// answered with rather than throwing for it — <see cref="SendAsync"/> layers that throw-on-
+    /// failure behaviour on top for every caller except <see cref="RedeemPromoCodeAsync"/>, which
+    /// needs to read expected non-2xx outcomes (404/400/409) itself.
+    /// </summary>
+    private async Task<HttpResponseMessage> SendRawAsync(
+        HttpMethod method, string path, object? body, CancellationToken ct)
+    {
         // Defensive: the composition root is expected to set the typed HttpClient's BaseAddress
         // from ApiOptions.BaseUrl, but a client built without that step (e.g. constructed by hand)
         // still works rather than throwing on a relative-URI request.
@@ -125,10 +187,9 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         if (body is not null)
             request.Content = JsonContent.Create(body, options: JsonOptions);
 
-        HttpResponseMessage response;
         try
         {
-            response = await http.SendAsync(request, ct);
+            return await http.SendAsync(request, ct);
         }
         catch (HttpRequestException ex)
         {
@@ -142,11 +203,6 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
             // and the exception propagates unchanged as the cancellation it is.
             throw new DecisionUnavailableException("The request timed out.", ex);
         }
-
-        if (!response.IsSuccessStatusCode)
-            await ThrowForFailureAsync(response, ct);
-
-        return response;
     }
 
     /// <summary>
@@ -196,6 +252,19 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
         }
     }
 
+    private static async Task<string?> ReadErrorFieldAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        try
+        {
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
+            return doc.RootElement.TryGetProperty("error", out var e) ? e.GetString() : null;
+        }
+        catch (JsonException)
+        {
+            return null;
+        }
+    }
+
     private static async Task<string> SafeReadBodyAsync(HttpResponseMessage response, CancellationToken ct)
     {
         try
@@ -233,6 +302,8 @@ internal sealed class CoreChoiceApiClient(HttpClient http, IDeviceIdentity devic
     private sealed record BalanceDto(Guid DeviceId, int Balance);
 
     private sealed record GrantDto(Guid DeviceId, int Balance, bool Granted, string? Reason);
+
+    private sealed record PromoRedeemDto(int CoinsGranted, int Balance);
 
     private sealed record PersonaDto(string Id, string DisplayName, string Description);
 

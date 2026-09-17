@@ -283,4 +283,261 @@ public class CoinsViewModelTests
         // Assert
         vm.Message.Should().BeNull();
     }
+
+    // ===== CanRedeem =====
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("ABCD")]
+    [InlineData("ABCDEF")]
+    [InlineData("    ")]
+    public void CanRedeem_WhenTheCodeIsNotFiveCharactersAfterTrimming_ShouldBeFalse(string code)
+    {
+        // Arrange
+        var vm = new CoinsViewModel(new FakeBillingService(), StubLedger());
+
+        // Act
+        vm.PromoCode = code;
+
+        // Assert
+        vm.CanRedeem.Should().BeFalse();
+    }
+
+    [Fact]
+    public void CanRedeem_WhenTheCodeIsExactlyFiveCharacters_ShouldBeTrue()
+    {
+        // Arrange
+        var vm = new CoinsViewModel(new FakeBillingService(), StubLedger());
+
+        // Act
+        vm.PromoCode = "C779K";
+
+        // Assert
+        vm.CanRedeem.Should().BeTrue();
+    }
+
+    [Fact]
+    public void CanRedeem_WhenTheCodeHasSurroundingWhitespaceButIsFiveCharactersTrimmed_ShouldBeTrue()
+    {
+        // Arrange
+        var vm = new CoinsViewModel(new FakeBillingService(), StubLedger());
+
+        // Act
+        vm.PromoCode = "  C779K  ";
+
+        // Assert
+        vm.CanRedeem.Should().BeTrue();
+    }
+
+    // ===== RedeemPromoCodeAsync =====
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheCodeIsNotFiveCharacters_ShouldNotCallTheLedgerAtAll()
+    {
+        // Arrange — the button itself is gated on CanRedeem, but the method guards the same way
+        // regardless of caller, since the endpoint is rate-limited and every call counts.
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(5));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "AB" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        await ledger.DidNotReceive().RedeemPromoCodeAsync(Arg.Any<string>(), Arg.Any<CancellationToken>());
+        vm.RedeemMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenRedeemed_ShouldUpdateTheBalanceClearTheFieldAndSayHowManyWereAdded()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(25));
+        ledger.RedeemPromoCodeAsync("C779K", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Redeemed(10, 35));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger);
+        await vm.LoadAsync();
+        vm.PromoCode = "C779K";
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.Balance.Should().Be(35);
+        vm.PromoCode.Should().BeEmpty();
+        vm.RedeemMessage.Should().Be("Added 10 analyses. Balance is now 35.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenExactlyOneAnalysisIsGranted_ShouldUseSingularWording()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("SOLOO", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Redeemed(1, 1));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "SOLOO" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("Added 1 analysis. Balance is now 1.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenAlreadyRedeemedByThisDevice_ShouldSayAsMuchAndNotChangeTheBalance()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(12));
+        ledger.RedeemPromoCodeAsync("LZQTS", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.AlreadyRedeemed));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger);
+        await vm.LoadAsync();
+        vm.PromoCode = "LZQTS";
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("That code has already been used on this device.");
+        vm.Balance.Should().Be(12);
+        vm.PromoCode.Should().Be("LZQTS", "a rejected code stays in the field so it can be corrected");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheCodeIsUnknown_ShouldSaySo()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("ZZZZZ", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.InvalidCode));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "ZZZZZ" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("That code was not recognised.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheCodeIsRevoked_ShouldSaySo()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("REVOK", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.RevokedCode));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "REVOK" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("That code has been revoked and can no longer be used.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheCodeHasExpired_ShouldSaySo()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("OLDCD", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.ExpiredCode));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "OLDCD" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("That code has expired.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheServerReportsAMalformedCode_ShouldShowTheServersOwnMessage()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("ABCDE", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(
+                PromoRedemptionOutcome.Malformed, "A code must be 5 characters."));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "ABCDE" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("A code must be 5 characters.");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhenTheLedgerThrows_ShouldShowAGenericMessageAndNotChangeTheBalance()
+    {
+        // Arrange — a genuine transport failure (unreachable, timeout, rate-limited), not one of
+        // the server's documented outcomes.
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(8));
+        ledger.RedeemPromoCodeAsync("C779K", Arg.Any<CancellationToken>())
+            .Returns<PromoRedemptionResult>(_ => throw new HttpRequestException("no signal"));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger);
+        await vm.LoadAsync();
+        vm.PromoCode = "C779K";
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.Balance.Should().Be(8);
+        vm.RedeemMessage.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_WhileInFlight_ShouldMakeCanRedeemFalse()
+    {
+        // Arrange — the endpoint is rate-limited (10/minute/IP), so the button must go inert for
+        // the duration of the call rather than let a second tap queue up another request.
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        var gate = new TaskCompletionSource<PromoRedemptionResult>();
+        ledger.RedeemPromoCodeAsync("C779K", Arg.Any<CancellationToken>()).Returns(gate.Task);
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "C779K" };
+
+        // Act
+        var redeeming = vm.RedeemPromoCodeAsync();
+        var canRedeemWhileInFlight = vm.CanRedeem;
+        gate.SetResult(PromoRedemptionResult.Redeemed(10, 10));
+        await redeeming;
+
+        // Assert
+        canRedeemWhileInFlight.Should().BeFalse();
+        vm.IsRedeeming.Should().BeFalse("the flag must be cleared once the call completes");
+    }
+
+    [Fact]
+    public async Task RedeemPromoCodeAsync_ShouldClearAnyMessageLeftOverFromAPreviousAttempt()
+    {
+        // Arrange
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("ZZZZZ", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.InvalidCode));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "ZZZZZ" };
+        await vm.RedeemPromoCodeAsync();
+        vm.RedeemMessage.Should().NotBeNull();
+
+        // Act
+        ledger.RedeemPromoCodeAsync("C779K", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Redeemed(10, 10));
+        vm.PromoCode = "C779K";
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.RedeemMessage.Should().Be("Added 10 analyses. Balance is now 10.");
+    }
 }

@@ -39,4 +39,10 @@ public partial class CoinsPage : ContentPage
 
     private async void OnBuyHundredTapped(object? sender, TappedEventArgs e) =>
         await BuyAsync(CoinsViewModel.HundredAnalysesProductId);
+
+    private async void OnRedeemTapped(object? sender, EventArgs e)
+    {
+        if (_viewModel.CanRedeem)
+            await _viewModel.RedeemPromoCodeAsync();
+    }
 }
