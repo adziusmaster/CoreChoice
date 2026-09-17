@@ -63,8 +63,18 @@ option, and the ones that will quietly talk you out of the other.
 Analyses beyond the free five are paid for with coins, bought in-app. No
 subscription, no account, no tracking, no ads.
 
-Privacy policy: https://corechoice.lechdigital.nl/privacy
+Privacy policy: https://lechdigital.nl/projects/corechoice/privacy/
 
-> **Before publishing:** that privacy-policy URL does not exist yet — it goes live
-> with the Hetzner deploy and the DNS record. Play requires a reachable policy URL,
-> so publish the page before submitting the listing.
+That page is live. The `corechoice.lechdigital.nl` subdomain does NOT resolve — only
+`api.corechoice.lechdigital.nl` was ever pointed at the server — so the policy URL given
+to Play must be the lechdigital.nl path above, which is the one that answers 200.
+
+## Release notes
+
+`release-notes/<version>.txt`, one file per release, in the same shape PurePrep uses: each
+locale wrapped in its own `<xx-YY>` tag so the whole file can be pasted into Play's
+release-notes field at once. **Play's limit is 500 characters per locale**, counted on the
+text between the tags, not including them.
+
+CoreChoice ships English only for now; add locales as whole tag blocks when there is a
+translation worth shipping, never a machine-translated one.

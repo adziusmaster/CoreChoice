@@ -1,0 +1,10 @@
+<en-GB>
+What's new in 1.0.0
+• The first closed test of CoreChoice — thank you for trying it.
+• Take the personality test: 50 questions, free for good.
+• Weigh a decision: write down the two options, get a considered read back shaped by how you decide.
+• Choose who answers: a pragmatist, a devil's advocate, warm support, pure logic.
+• Every answer is kept on your phone for as long as you want.
+• Your first analyses are on the house. Nothing renews.
+Found something odd? Tell me.
+</en-GB>
