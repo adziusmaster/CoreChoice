@@ -43,9 +43,9 @@ internal sealed class PlayBillingService : IBillingService, IDisposable
     {
         var placeholderPrices = new Dictionary<string, string>
         {
-            [AnalysisPackCatalog.TenAnalysesProductId] = "€2.99",
-            [AnalysisPackCatalog.ThirtyAnalysesProductId] = "€5.99",
-            [AnalysisPackCatalog.HundredAnalysesProductId] = "€14.99",
+            [AnalysisPackCatalog.TenAnalysesProductId] = "€0.99",
+            [AnalysisPackCatalog.ThirtyAnalysesProductId] = "€1.99",
+            [AnalysisPackCatalog.HundredAnalysesProductId] = "€4.99",
         };
 
         return AnalysisPackCatalog.Entries

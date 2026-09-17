@@ -425,6 +425,45 @@ public class CoinsViewModelTests
     }
 
     [Fact]
+    public async Task PromoCode_WhenEditedAfterAFailedAttempt_ShouldClearTheOldMessage()
+    {
+        // Arrange — on the device, the answer to the PREVIOUS code stayed on screen while a new
+        // one was being typed, which reads as if the new code had already been rejected.
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(0));
+        ledger.RedeemPromoCodeAsync("ZZZZZ", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Failed(PromoRedemptionOutcome.InvalidCode));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "ZZZZZ" };
+        await vm.RedeemPromoCodeAsync();
+        vm.RedeemMessage.Should().NotBeNull();
+
+        // Act
+        vm.PromoCode = "ZZZZY";
+
+        // Assert
+        vm.RedeemMessage.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task PromoCode_WhenClearedByASuccessfulRedemption_ShouldKeepTheSuccessMessage()
+    {
+        // Arrange — the success path clears the field itself, and that self-inflicted change must
+        // not wipe the sentence that just reported the success.
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        ledger.GetBalanceAsync(Arg.Any<CancellationToken>()).Returns(new CoinBalance(5));
+        ledger.RedeemPromoCodeAsync("C779K", Arg.Any<CancellationToken>())
+            .Returns(PromoRedemptionResult.Redeemed(coinsGranted: 5, balance: 10));
+        var vm = new CoinsViewModel(new FakeBillingService(), ledger) { PromoCode = "C779K" };
+
+        // Act
+        await vm.RedeemPromoCodeAsync();
+
+        // Assert
+        vm.PromoCode.Should().BeEmpty();
+        vm.RedeemMessage.Should().Be("Added 5 analyses. Balance is now 10.");
+    }
+
+    [Fact]
     public async Task RedeemPromoCodeAsync_WhenTheCodeIsRevoked_ShouldSaySo()
     {
         // Arrange

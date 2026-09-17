@@ -115,15 +115,13 @@ force it after changing an SVG, delete `obj/Debug/net10.0-android/resizetizer` f
 
 Play Store listing graphics are generated separately — see `store-assets/README.md`.
 
-## Signed release AAB — not yet set up
+## Signed release AAB
 
-**No CoreChoice keystore exists yet** (`~/keystores/` holds only the PurePrep one), and
-the csproj carries no signing block. Both are part of the pre-`.aab` checkpoint, not
-something to improvise. When that checkpoint is reached, mirror PurePrep: a keystore at
-`~/keystores/corechoice-upload.jks` outside the repo, signing activated only for Release
-Android builds when `CORECHOICE_KEYSTORE_PASS` is set, and no secrets committed.
-
-The release command will then be:
+The keystore lives at `~/keystores/corechoice-upload.jks` with its password in
+`~/keystores/corechoice-upload.pass.txt` (mode 600), both OUTSIDE the repo. The csproj's
+signing block activates only for a Release Android build with `CORECHOICE_KEYSTORE_PASS`
+set, so a Debug build is unaffected and a Release build without the password fails loudly
+rather than quietly shipping an unsigned artifact.
 
 ```sh
 export CORECHOICE_KEYSTORE_PASS=$(cat ~/keystores/corechoice-upload.pass.txt)
@@ -134,6 +132,30 @@ dotnet build src/CoreChoice/CoreChoice.csproj -c Release -f net10.0-android \
 ```
 
 Verify the signature with `"$JAVA_HOME/bin/jarsigner" -verify <the .aab>`.
+
+**`-p:UseDefaultPublishRuntimeIdentifier=false` is not optional.** Without it the Release
+build appends the HOST rid and restore fails outright — `NU1102: Unable to find package
+Microsoft.NETCore.App.Runtime.Mono.osx-arm64`, a package that only exists inside the SDK.
+The error says nothing about Android and is easy to misread as a broken workload. It only
+appears once `obj/` has been cleared, because a stale `project.assets.json` hides it.
+
+### Smoke-test the Release build before uploading
+
+R8 and the linker only fail at runtime, so the `.aab` is never the first thing to run.
+Build the same configuration as an APK, install it, and walk the app:
+
+```sh
+dotnet build src/CoreChoice/CoreChoice.csproj -c Release -f net10.0-android \
+  -p:UseDefaultPublishRuntimeIdentifier=false \
+  -p:AndroidPackageFormat=apk -p:EmbedAssembliesIntoApk=true \
+  -p:AndroidSdkDirectory=$HOME/android-sdk -p:JavaSdkDirectory=$JAVA_HOME
+adb install -r src/CoreChoice/bin/Release/net10.0-android/com.adziusmaster.corechoice-Signed.apk
+```
+
+A release-signed APK cannot replace a debug-signed install: `adb install -r` answers
+`INSTALL_FAILED_UPDATE_INCOMPATIBLE` and the app must be uninstalled first, which wipes
+its local database. Pull `files/corechoice.db` with `adb shell run-as` beforehand if the
+device holds anything worth keeping (`run-as` works only against a debuggable build).
 
 ## Before each Play upload
 

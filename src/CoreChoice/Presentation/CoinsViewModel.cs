@@ -271,18 +271,30 @@ public sealed partial class CoinsViewModel(IBillingService billing, ICoinLedgerC
                 return;
             }
 
-            RedeemMessage = DescribeRedemption(result);
+            // The field is cleared BEFORE the message is set, not after: clearing it runs
+            // OnPromoCodeChanged, which wipes the message — so setting the message first would
+            // erase the very sentence reporting the success.
+            var description = DescribeRedemption(result);
             if (result.Outcome == PromoRedemptionOutcome.Redeemed)
             {
                 Balance = result.Balance;
                 PromoCode = string.Empty;
             }
+
+            RedeemMessage = description;
         }
         finally
         {
             IsRedeeming = false;
         }
     }
+
+    /// <summary>
+    /// Editing the code retires the answer to the previous one. Without this, the sentence
+    /// rejecting the last code sat under the field while the next was being typed, which reads as
+    /// if the new code had already been refused.
+    /// </summary>
+    partial void OnPromoCodeChanged(string value) => RedeemMessage = null;
 
     private static string DescribeRedemption(PromoRedemptionResult result) => result.Outcome switch
     {

@@ -165,10 +165,22 @@
                                     IsVisible="{Binding CanRedeem}" Clicked="OnRedeemTapped" />
                         </Grid>
 
-                        <Label Text="{Binding RedeemMessage}"
-                               IsVisible="{Binding RedeemMessage, Converter={StaticResource IsNotEmptyConverter}}"
-                               FontFamily="DMSans" FontSize="13" LineHeight="1.5" TextColor="{DynamicResource Muted}"
-                               LineBreakMode="WordWrap" />
+                        <!-- A slot of FIXED height, not a label that appears and disappears.
+                             This card lives inside PageShell's ScrollView, and on Android that
+                             ScrollView does not re-measure its content when a descendant's height
+                             changes: the outer layout keeps the height it already had. A message
+                             that grew the card was therefore clipped by the Border, and one added
+                             to the outer stack was arranged into nothing at all — the redemption
+                             worked, the server granted the coins, and the sentence saying so was
+                             simply never drawn. InvalidateMeasure on the content did not move it.
+                             Reserving the space means no layout ever has to grow: the text only
+                             fills a box that was always there. Two lines' worth at this size. -->
+                        <Grid HeightRequest="40">
+                            <Label Text="{Binding RedeemMessage}"
+                                   FontFamily="DMSans" FontSize="13" LineHeight="1.5"
+                                   TextColor="{DynamicResource Muted}"
+                                   LineBreakMode="WordWrap" VerticalOptions="Start" />
+                        </Grid>
                     </VerticalStackLayout>
                 </Border>
 
