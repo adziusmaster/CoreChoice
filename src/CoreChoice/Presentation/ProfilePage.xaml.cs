@@ -25,4 +25,25 @@ public partial class ProfilePage : ContentPage
 
     private async void OnAskClicked(object? sender, EventArgs e) =>
         await Shell.Current.GoToAsync($"//{nameof(DilemmaPage)}");
+
+    /// <summary>
+    /// "Retake the test" — confirms first, since fifty answers is ten minutes of someone's life
+    /// and a mis-tap must not destroy it. On confirm, clears the stored answers (the profile shown
+    /// on this very screen is left in place — see <see cref="ProfileViewModel.RetakeAsync"/>) and
+    /// sends the person straight to the questionnaire rather than back through the intro screen.
+    /// </summary>
+    private async void OnRetakeClicked(object? sender, EventArgs e)
+    {
+        var confirmed = await DisplayAlertAsync(
+            "Retake the test?",
+            "This clears your fifty answers so you can start over. Your current profile stays exactly as it is until you finish the new one.",
+            "Retake",
+            "Cancel");
+
+        if (!confirmed)
+            return;
+
+        await _viewModel.RetakeAsync();
+        await Shell.Current.GoToAsync(nameof(TestPage));
+    }
 }

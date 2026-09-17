@@ -9,7 +9,7 @@
 
     <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
 
-        <ScrollView Grid.Row="0">
+        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Spacing="0">
 
                 <!-- The gear that used to live here is gone: Settings is now its own bottom tab. -->

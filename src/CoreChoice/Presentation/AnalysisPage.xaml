@@ -15,7 +15,7 @@
         <!-- Artboard 7 · The answer -->
         <Grid RowDefinitions="*,Auto" Padding="24,60,24,24" IsVisible="{Binding HasAnalysis}">
 
-            <ScrollView Grid.Row="0">
+            <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
                 <VerticalStackLayout Spacing="0">
 
                     <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,20">

@@ -5,7 +5,19 @@
        otherwise copy that file off the device to Google Drive. The app's own intro screen and the
        published privacy policy both promise "your answers stay on this phone. They are never sent
        anywhere." — leaving backup on would make that promise false. -->
-  <application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" />
+  <!-- enableOnBackInvokedCallback is "false" deliberately: targetSdk 36 turns predictive back on
+       by default, which means the legacy onBackPressed path (and so Shell.OnBackButtonPressed,
+       and AppShell's override of it that runs BackNavigation.Decide) is never called at all. The
+       installed Microsoft.Maui.Controls 10.0.0 has no OnBackInvokedCallback registration of its
+       own to pick up the slack (checked: neither Microsoft.Maui.dll nor
+       Microsoft.Maui.Controls.dll for net10.0-android36.0 reference OnBackInvokedCallback,
+       BackInvoked, or PredictiveBack in any form), so opting out is what makes the existing,
+       tested override fire on this device rather than the app being one predictive-back gesture
+       away from silently exiting. This is a deliberate short-term choice — Play will eventually
+       require predictive back, at which point AppShell's back handling needs to move to a real
+       OnBackInvokedCallback registered in MainActivity, delegating to the same
+       BackNavigation.Decide. -->
+  <application android:allowBackup="false" android:icon="@mipmap/appicon" android:roundIcon="@mipmap/appicon_round" android:supportsRtl="true" android:enableOnBackInvokedCallback="false" />
   <uses-permission android:name="android.permission.INTERNET" />
   <!-- Required by Google Play Billing so in-app products / purchases work. Buying is disabled in
        the app today (no redeem endpoint yet), but this must be in place before closed testing. -->

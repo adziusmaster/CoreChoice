@@ -83,6 +83,20 @@ public sealed partial class ProfileViewModel(IProfileRepository repository, ICoi
         }
     }
 
+    /// <summary>
+    /// Clears the fifty stored answers so the test can be retaken, deliberately leaving the scored
+    /// profile on <see cref="Profile"/> untouched — <see cref="IProfileRepository.ClearAnswersAsync"/>
+    /// is specified to remove only the answers, never the profile, so someone who abandons a retake
+    /// before finishing the new fifty is not left with nothing. Only a full new test, scored the
+    /// next time <see cref="LoadAsync"/> runs from a completed resume, replaces it.
+    /// </summary>
+    /// <remarks>
+    /// The confirmation a mis-tap must survive (fifty answers is ten minutes of someone's life) is
+    /// the page's job, the one MAUI-dependent part of the retake flow — this method is called only
+    /// once that confirmation has already been given.
+    /// </remarks>
+    public Task RetakeAsync(CancellationToken ct = default) => repository.ClearAnswersAsync(ct);
+
     private static string BuildSummary(OceanProfile profile) => string.Join(" · ",
     [
         $"Openness {profile.Openness.Band}",

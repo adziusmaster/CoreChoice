@@ -80,9 +80,10 @@ public sealed partial class DilemmaViewModel(
     /// otherwise the locally-computed suggestion. The design calls for a pre-made, visible,
     /// changeable suggestion rather than an empty "choose who answers" prompt — a suggestion that
     /// has to be sought before it is seen is not a suggestion, it hands the decision straight back
-    /// to someone who came here because choices exhaust them. An explicit choice always wins here
-    /// and is never replaced by a later suggestion recompute, because <see cref="Persona"/> is
-    /// only ever set by the person tapping a persona on the picker screen.
+    /// to someone who came here because choices exhaust them. An explicit choice wins here only
+    /// until the weight changes again: <see cref="OnWeightChanged(int)"/> clears <see cref="Persona"/>
+    /// on every slider move, because a changed weight is a changed question, and the suggestion for
+    /// it should be shown rather than silently kept stale under an earlier explicit pick.
     /// </summary>
     public string FooterDisplayName => Persona?.DisplayName ?? SuggestedDisplayName;
 
@@ -149,9 +150,20 @@ public sealed partial class DilemmaViewModel(
         }
     }
 
-    /// <summary>Recomputes <see cref="SuggestedDisplayName"/> whenever the slider moves — the
-    /// suggestion rule cross-references the weight directly, so the footer must follow it.</summary>
-    partial void OnWeightChanged(int value) => RefreshSuggestedDisplayName();
+    /// <summary>
+    /// Whenever the slider moves: clears any explicitly chosen <see cref="Persona"/> and
+    /// recomputes <see cref="SuggestedDisplayName"/>, so the footer always follows the weight that
+    /// is now current. A weight change means a changed question, so an earlier explicit choice
+    /// must not keep answering it — the suggestion for the new weight takes back over until the
+    /// person explicitly picks again. This never touches <see cref="Weight"/> itself, only the
+    /// reverse never happens either: choosing a persona on the picker screen must never move this
+    /// slider back.
+    /// </summary>
+    partial void OnWeightChanged(int value)
+    {
+        Persona = null;
+        RefreshSuggestedDisplayName();
+    }
 
     /// <summary>
     /// Loads the stored profile and resolves the suggested persona's name against it, then makes a

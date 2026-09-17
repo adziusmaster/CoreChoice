@@ -9,7 +9,7 @@
 
     <Grid RowDefinitions="*,Auto" Padding="24,52,24,24">
 
-        <ScrollView Grid.Row="0">
+        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Spacing="0">
 
                 <Label Text="YOURS, FREE, PERMANENTLY" Style="{StaticResource MicroLabel}"
@@ -124,9 +124,20 @@
         </ScrollView>
 
         <VerticalStackLayout Grid.Row="1" Spacing="0" Margin="0,12,0,0">
-            <Label Text="Kept on this phone. Retake it whenever you like."
-                   FontFamily="DMSans" FontSize="12.5" LineHeight="1.55"
-                   TextColor="{DynamicResource Faint}" Margin="0,0,0,16" />
+            <Label FontFamily="DMSans" FontSize="12.5" LineHeight="1.55"
+                   TextColor="{DynamicResource Faint}" Margin="0,0,0,16">
+                <Label.FormattedText>
+                    <FormattedString>
+                        <Span Text="Kept on this phone. " />
+                        <Span Text="Retake it whenever you like."
+                              FontFamily="DMSansMedium" TextColor="{DynamicResource Muted}">
+                            <Span.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnRetakeClicked" />
+                            </Span.GestureRecognizers>
+                        </Span>
+                    </FormattedString>
+                </Label.FormattedText>
+            </Label>
             <Button Text="Ask it something" Style="{StaticResource PrimaryButton}" Clicked="OnAskClicked" />
         </VerticalStackLayout>
 

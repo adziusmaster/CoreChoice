@@ -7,7 +7,7 @@
              x:DataType="presentation:AnalysisViewModel"
              BackgroundColor="{DynamicResource Bg}">
 
-    <ScrollView>
+    <ScrollView VerticalScrollBarVisibility="Never">
         <Grid RowDefinitions="*,Auto,Auto,*,Auto" Padding="26,48,26,26">
 
             <!-- Row 0: spacer, matches the artboard's top flex-grow -->

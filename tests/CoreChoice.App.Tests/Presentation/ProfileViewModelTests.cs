@@ -169,4 +169,44 @@ public class ProfileViewModelTests
         // Assert
         await act.Should().ThrowAsync<OperationCanceledException>();
     }
+
+    // ===== RetakeAsync =====
+
+    [Fact]
+    public async Task RetakeAsync_ShouldClearTheStoredAnswers()
+    {
+        // Arrange
+        var repository = new FakeProfileRepository();
+        repository.SeedAnswers(AllFiftyAnswered());
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        await vm.RetakeAsync();
+
+        // Assert
+        (await repository.LoadAnswersAsync()).Responses.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task RetakeAsync_ShouldLeaveTheExistingProfileInPlace()
+    {
+        // Arrange — someone who abandons a retake before finishing the new fifty must not be left
+        // with nothing: ClearAnswersAsync is specified to remove only the answers.
+        var repository = new FakeProfileRepository();
+        var existing = new OceanProfile(
+            TraitScore.From(70), TraitScore.From(60), TraitScore.From(50),
+            TraitScore.From(40), TraitScore.From(30));
+        await repository.SaveProfileAsync(existing);
+        repository.SeedAnswers(AllFiftyAnswered());
+        var ledger = Substitute.For<ICoinLedgerClient>();
+        var vm = new ProfileViewModel(repository, ledger);
+
+        // Act
+        await vm.RetakeAsync();
+
+        // Assert
+        (await repository.LoadProfileAsync()).Should().Be(existing);
+        repository.SavedProfile.Should().Be(existing);
+    }
 }

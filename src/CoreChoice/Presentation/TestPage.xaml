@@ -56,7 +56,7 @@
                FontFamily="DMSans" FontSize="12" TextColor="{DynamicResource Faint}"
                Margin="0,0,0,24" />
 
-        <ScrollView Grid.Row="3">
+        <ScrollView Grid.Row="3" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Spacing="0">
 
                 <VerticalStackLayout Spacing="26" BindableLayout.ItemsSource="{Binding CurrentPage}">

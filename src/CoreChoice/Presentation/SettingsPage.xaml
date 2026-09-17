@@ -9,21 +9,37 @@
 
     <ContentPage.Resources>
         <ResourceDictionary>
+            <!-- Stroke is Muted, not Line: Line is a hairline meant for a surface-to-surface seam,
+                 and against the page background it measures well under the 3:1 a UI component
+                 needs to be perceivable at all (1.16-1.34:1 across all six palettes) — the
+                 unselected button would have no visible edge. Muted is the only existing token
+                 that clears 3:1 against Bg in every palette (5.47-6.53:1) without inventing a new
+                 one. -->
             <Style x:Key="ModeOption" TargetType="Border">
                 <Setter Property="BackgroundColor" Value="Transparent" />
-                <Setter Property="Stroke" Value="{DynamicResource Line}" />
+                <Setter Property="Stroke" Value="{DynamicResource Muted}" />
                 <Setter Property="StrokeThickness" Value="1" />
                 <Setter Property="StrokeShape" Value="RoundRectangle 9" />
                 <Setter Property="HeightRequest" Value="46" />
                 <Setter Property="MinimumWidthRequest" Value="44" />
                 <Setter Property="HorizontalOptions" Value="Fill" />
             </Style>
+
+            <!-- The palette rows below are the same kind of selectable control as the mode
+                 buttons above, so they get the same fix: CardBorder's own default Stroke (Line)
+                 against its Surface fill measures 1.19-1.26:1 unselected, just as invisible.
+                 PaletteOption keeps everything else CardBorder gives these rows (Surface fill,
+                 corner radius) and only swaps the stroke to Muted, which measures 5.20-6.55:1
+                 against Surface in all six palettes. -->
+            <Style x:Key="PaletteOption" TargetType="Border" BasedOn="{StaticResource CardBorder}">
+                <Setter Property="Stroke" Value="{DynamicResource Muted}" />
+            </Style>
         </ResourceDictionary>
     </ContentPage.Resources>
 
     <Grid RowDefinitions="*,Auto" Padding="24,60,24,24">
 
-        <ScrollView Grid.Row="0">
+        <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Never">
             <VerticalStackLayout Spacing="0">
 
                 <Label Text="Appearance"
@@ -128,7 +144,7 @@
                 <VerticalStackLayout Spacing="10">
 
                     <!-- Considered -->
-                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                    <Border Style="{StaticResource PaletteOption}" Padding="15,16" MinimumHeightRequest="44">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
                                          Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Considered}"
@@ -158,7 +174,7 @@
                     </Border>
 
                     <!-- Composed -->
-                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                    <Border Style="{StaticResource PaletteOption}" Padding="15,16" MinimumHeightRequest="44">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
                                          Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Composed}"
@@ -188,7 +204,7 @@
                     </Border>
 
                     <!-- Still -->
-                    <Border Style="{StaticResource CardBorder}" Padding="15,16" MinimumHeightRequest="44">
+                    <Border Style="{StaticResource PaletteOption}" Padding="15,16" MinimumHeightRequest="44">
                         <Border.Triggers>
                             <DataTrigger TargetType="Border"
                                          Binding="{Binding SelectedPalette, Converter={StaticResource PaletteSelectedConverter}, ConverterParameter=Still}"

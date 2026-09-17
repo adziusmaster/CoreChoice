@@ -425,22 +425,40 @@ public class DilemmaViewModelTests
     }
 
     [Fact]
-    public async Task FooterDisplayName_WhenAPersonaWasExplicitlyChosen_ShouldNotBeOverwrittenByALaterSuggestionRecompute()
+    public async Task FooterDisplayName_WhenTheWeightChangesAfterAnExplicitPersonaChoice_ShouldClearItAndShowTheNewSuggestion()
     {
         // Arrange — the person picked a persona on PersonaPage; SamplePersona ("the-pragmatist")
-        // differs from whatever weight 5 would suggest ("the-long-view"), so an overwrite is
-        // detectable.
+        // differs from whatever weight 5 would suggest ("the-long-view"), so a cleared choice is
+        // detectable. A changed weight is a changed question: the explicit pick must not survive
+        // it, and the slider is what moved here, so it must win back over.
         var vm = BuildVm();
         vm.Persona = SamplePersona;
 
-        // Act — both a weight change and a full re-initialize (fresh catalog fetch) happen after
-        // the explicit choice.
+        // Act — moving the slider after the explicit choice.
         vm.Weight = 5;
+
+        // Assert — the explicit choice is gone; the new suggestion is shown instead.
+        vm.Persona.Should().BeNull();
+        vm.FooterDisplayName.Should().Be("The Long View");
+
+        // A full re-initialize (fresh catalog fetch) afterwards must not resurrect the old pick.
         await vm.InitializeAsync();
+        vm.FooterDisplayName.Should().Be("The Long View");
+    }
+
+    [Fact]
+    public void Persona_WhenSetExplicitlyFromThePickerScreen_ShouldNotChangeTheWeight()
+    {
+        // Arrange — returning from PersonaPage must leave "how much rides on it" exactly where the
+        // person set it; only moving the slider itself may change Weight.
+        var vm = BuildVm();
+        vm.Weight = 4;
+
+        // Act
+        vm.Persona = SamplePersona;
 
         // Assert
-        vm.FooterDisplayName.Should().Be(SamplePersona.DisplayName);
-        vm.FooterDisplayName.Should().NotBe("The Long View");
+        vm.Weight.Should().Be(4);
     }
 
     [Fact]

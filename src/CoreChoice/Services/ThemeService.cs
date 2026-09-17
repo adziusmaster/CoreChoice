@@ -1,3 +1,4 @@
+using CoreChoice.Platforms.Android;
 using CoreChoice.Resources.Styles;
 
 namespace CoreChoice.Services;
@@ -45,12 +46,20 @@ public sealed class ThemeService : IThemeStore
         };
 
         var systemIsDark = app.RequestedTheme == AppTheme.Dark;
-        var wanted = Build(Current.Resolve(systemIsDark));
+        var resolved = Current.Resolve(systemIsDark);
+        var wanted = Build(resolved);
 
         if (_active is not null)
             app.Resources.MergedDictionaries.Remove(_active);
         app.Resources.MergedDictionaries.Add(wanted);
         _active = wanted;
+
+        // The system status/navigation bars are transparent from launch (set once in
+        // MainActivity) so the app's own background shows through them instead of a black band —
+        // but that only follows the palette if the window's background and the bar icons' light/
+        // dark appearance are kept in step with it here, on every apply, not just at startup.
+        if (app.Resources.TryGetValue("Bg", out var bgResource) && bgResource is Color bg)
+            SystemBarAppearance.Apply(bg, resolved.Mode == ThemeMode.Light);
     }
 
     private static ResourceDictionary Build(AppearanceChoice resolved) => resolved.DictionaryName switch
