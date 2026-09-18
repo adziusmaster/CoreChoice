@@ -45,39 +45,73 @@ Findings that drove specific decisions here, not background reading:
 
 Sources are listed at the foot of this document.
 
-## Governing decision: two options, still
+## Governing decision: two or three options, never more
 
 `OptionA`/`OptionB` are baked three layers deep — `DecisionAnalysis`, the wire contracts in
 `Endpoints/Contracts.cs`, and the on-device `DecisionRow` (`OptionA`, `OptionB`,
-`OptionAJson`, `OptionBJson`). Supporting "2 or 3 options" means a domain change, a wire
-change, a SQLite migration over history real testers already hold, the `AnswerView` layout,
-and the JSON schema the model returns.
+`OptionAJson`, `OptionBJson`). All of it moves to a list: `IReadOnlyList<OptionAssessment>`
+in the domain and on the wire, an `OptionsJson` column replacing the four option columns, the
+`AnswerView` layout, and the model's JSON output schema.
 
-We keep exactly two, because the domain-aware reframe in §3 houses the third path better than
-a third text box would. When someone's real answer is *"say the thing you haven't said to him
-yet"*, that belongs in **what you would need to find out**, which the reframe surfaces
-anyway. A third option slot would demote a genuine insight to a radio button.
+This is affordable because **there is no shipped history to migrate** — the closed test has no
+testers yet. It would not have been affordable later, which is the only reason the earlier
+draft of this spec held at two.
 
-The honest cost: the app still lands on a binary. It derives it from their words rather than
-demanding it cold, which is an improvement, not a cure. N options stays open once the reframe
-is proven in use.
+**Three is a hard ceiling, and the app proposes rather than the person adding.** The framing
+step returns two or three options, deciding for itself whether a genuine third path exists.
+The person may delete down to two; there is no "add another" beyond three. The product's own
+thesis is that more options is the problem — an open-ended list rebuilds the spiral the app
+exists to stop. Three is enough to break a false binary without reopening it.
+
+A third option is not a substitute for §3's reframe. When someone's real answer is *"say the
+thing you haven't said to him yet"*, that still belongs in **what you would need to find
+out** — an action that changes the situation is not a fourth thing to choose between.
 
 ## 1. The framing endpoint
 
-`POST /api/dilemma/frame`. No coin. Follows the existing contract style in
-`Endpoints/Contracts.cs` — `internal sealed record`, mapped to the domain at the boundary so a
-malformed payload is a 400 and never an exception raised mid-assembly.
+`POST /api/dilemma/frame`. **Costs one coin, and the analysis it leads to is then free.**
+Follows the existing contract style in `Endpoints/Contracts.cs` — `internal sealed record`,
+mapped to the domain at the boundary so a malformed payload is a 400 and never an exception
+raised mid-assembly.
 
 ```csharp
 internal sealed record FrameDilemmaRequest(Guid DeviceId, string Description);
 
 internal sealed record FrameDilemmaResponse(
-    string OptionA,
-    string OptionB,
-    bool Interpersonal,      // an absent person is affected by this decision
-    bool ContextThin,        // too little supplied to advise well
-    string? ContextPrompt);  // one concrete question, non-null only when ContextThin
+    Guid FramingId,                    // the receipt; redeemable once, for one analysis
+    IReadOnlyList<string> Options,     // two or three, never more
+    bool Interpersonal,                // an absent person is affected by this decision
+    bool ContextThin,                  // too little supplied to advise well
+    string? ContextPrompt,             // one concrete question, non-null only when ContextThin
+    int Balance);
 ```
+
+### Two paths, one coin
+
+| Path | Coin spent at | Then |
+|---|---|---|
+| Write the options yourself | the analysis | as today |
+| Describe the situation | the framing | that analysis is free |
+
+Exactly one coin per decision either way, charged where the first model call happens. This
+also removes a weakness a free endpoint would have had: an uncharged endpoint that calls a
+model is a way to spend the maintainer's money, which would have leaned entirely on the
+origin cap and rate limiter to contain. Coin-gated, that pressure largely disappears — the
+limiter stays, but it is no longer the only thing standing between a script and the bill.
+
+**The server stores a receipt, not the words.** `FramingId` plus a redeemed flag, and nothing
+else. `GenerateDecisionRequest` presents the id; the server checks it is unredeemed, marks it
+spent and skips the charge. What persists server-side is an id and a boolean, which is the
+same shape of thing `UsageLog` already keeps. The dilemma text is never written down — see
+§2 for where saved framings actually live.
+
+**Edits do not void the receipt.** Someone who rewrites the options heavily before asking is
+still not charged again. The coin bought the decision, not a particular wording, and metering
+that would be both user-hostile and impossible to explain.
+
+**Framing joins the refund discipline.** Coin spent, anything downstream fails, coin returned
+— the same invariant every other spending path already holds, including a caller
+disconnecting mid-request.
 
 **Classification is server-side and re-derived, never trusted.** `GenerateDecisionRequest`
 gains `bool Interpersonal`, but `/api/decisions` re-derives it rather than believing the
@@ -90,18 +124,16 @@ skipped by exactly the people whose situations most need it. Asking one concrete
 any coin is spent, beats a permanently mandatory field that everyone learns to fill with
 "n/a".
 
-**No coin means it needs the abuse machinery that already exists.** The salted-IP-hash origin
-cap and the rate limiter both apply. A free endpoint that calls a model is otherwise a way to
-spend the maintainer's money.
+**Failure is non-blocking.** If framing errors or times out, the coin is refunded and the
+person falls through to manual entry (§2, state 2, empty). A degraded feature must never be
+the thing that stops someone asking.
 
-**Failure is non-blocking.** If framing errors or times out, the person falls through to
-manual two-box entry (§2, state 2, empty). A degraded feature must never be the thing that
-stops someone asking.
-
-**Cost, stated plainly.** Analyses run 700–950 tokens. Framing adds roughly 300–500 more and
-earns nothing, including for everyone who drafts options and abandons. Call it +40% model
-spend per completed decision, more once abandons are counted. This is the price of the hybrid
-input model and it is accepted deliberately.
+**Cost, stated plainly.** Analyses run 700–950 tokens; framing adds roughly 300–500 more. A
+described decision therefore costs more to serve than a typed one while earning the same
+single coin. Framings that are paid for and never asked are the compensating case: the coin
+is taken, only the cheaper call is made, and the unredeemed receipt sits waiting. Someone
+exploring three phrasings of the same question pays three coins, which is both defensible and
+simple to explain.
 
 ## 2. The describe-then-confirm screen
 
@@ -123,11 +155,25 @@ and volume of detail is exactly what the model lacks. The placeholder models tel
 not naming options. Beneath it, a quiet escape hatch — **"I already know my two options"** —
 jumping to state 2 with empty fields. That is also where framing failures land.
 
-**State 2 — Confirm.** "Sounds like you're weighing:" over two prefilled, editable option
-fields. The description stays visible above them, collapsed but expandable, so it is obvious
-where the options came from and that the words are still in play. When `ContextThin`, the
-single question sits inline — optional, prominent, asked before a coin is spent. Weight and
-persona are unchanged.
+**State 2 — Confirm.** "Sounds like you're weighing:" over the two or three prefilled,
+editable option fields the framing returned. Each can be deleted down to a floor of two;
+there is no control to add a fourth. The description stays visible above them, collapsed but
+expandable, so it is obvious where the options came from and that the words are still in
+play. When `ContextThin`, the single question sits inline — optional and prominent. Weight
+and persona are unchanged.
+
+**Saved framings live on the device.** Every framing is written to local SQLite when it
+returns, asked or not, so a paid-for framing is never lost and can be returned to later. The
+Ask tab surfaces unredeemed ones — "you started this on Tuesday" — and redeeming one spends
+no further coin.
+
+This is deliberately **not** server-side. The README's second invariant is *"Nothing you type
+is written down — the dilemma travels in the request, is used to build the prompt, and is
+never persisted"*; it is enforced by a test that was broken and watched to fail, and it is
+published in the privacy policy and on the website. Saved framings are dilemma text. On the
+device they sit beside the decision history that already lives there and break nothing; on
+the server they would break a promise made in public. The server's half of the arrangement is
+the receipt from §1 — an id and a boolean.
 
 **The tentative wording is load-bearing.** "Sounds like you're weighing" invites correction;
 "Your options are" does not. If people rubber-stamp the draft, the form's invented binary has
@@ -157,9 +203,37 @@ model picks whichever it prefers. Order and precedence are the fix.
 
 > This decision affects someone who is not here and has not been heard. You have one person's
 > account. Say so plainly, once, without apology. Do not recommend ending a relationship on
-> this basis. Weigh both options honestly, then name the two or three things you would need to
+> this basis. Weigh every option honestly, then name the two or three things you would need to
 > know — things only the other person or a conversation could supply — that would change your
-> answer either way. Confidence must not exceed 50.
+> answer either way. Confidence must not exceed {{CONFIDENCE_CEILING}}.
+
+### Confidence is earned, not toggled
+
+The ceiling is not a constant and is deliberately **not** a user setting.
+
+A setting labelled "just give me a straight answer" would be switched on by precisely the
+person the ceiling exists for: someone at 1am who wants permission rather than analysis. The
+research is specifically that people prefer the flattering model *even when its advice is
+worse*, so shipping the safeguard alongside a documented way to disable it means shipping it
+to nobody who needs it. "They chose it" does not make the advice better. A setting would also
+imply the guardrail is a matter of taste; it is a fact about the input — the app heard one
+side.
+
+Instead the ceiling rises as the gap closes, computed server-side from what was actually
+supplied:
+
+| What the person has given | `{{CONFIDENCE_CEILING}}` |
+|---|---|
+| A one-sided account, nothing more | 50 |
+| Answered the `ContextPrompt` | 65 |
+| Described what the other person would say, or what happened when they last raised it | 80 |
+
+The same agency, tied to the thing that justifies the answer — and it converts the cap from a
+wall into a reason to say more, which is the behaviour the app wants anyway. The thresholds
+are a starting point to be tuned against the eval suite, not a finding.
+
+Any future tone setting — brevity, warmth, how much reasoning is shown — leaves this
+untouched.
 
 **Global hardening, every persona, interpersonal or not.** Do not adopt the person's framing of
 anyone absent. Make the strongest case for the option they appear to resist. Lower confidence
@@ -194,10 +268,12 @@ is worthless if a version number can mean two prompts. Production needs the SQL 
 `DEPLOY.md`. `ContentSeed.cs` is still updated so fresh databases match — the seed is not the
 deployment.
 
-**Accepted trade-off.** Capping confidence at 50 and declining to recommend will feel worse to
-some users than today's confident answer. The research is blunt that people prefer the
+**Accepted trade-off.** A ceilinged confidence and a declined recommendation will feel worse
+to some users than today's confident answer. The research is blunt that people prefer the
 flattering model even when it is wrong. Expect a satisfaction cost on exactly the questions
-where being liked and being right diverge. That is the intended behaviour, not a regression.
+where being liked and being right diverge. That is the intended behaviour, not a regression —
+and the earned ceiling above is the only escape hatch offered, because it is the only one
+that improves the answer rather than merely the mood.
 
 ## 4. The onboarding shell
 
@@ -306,9 +382,19 @@ Conventions are unchanged: xUnit, NSubstitute, FluentAssertions,
   Iterate every active template; assert the composed prompt carries the clause.
 - **A forged flag does not disable the safeguard.** `Interpersonal: false` on a plainly
   interpersonal description still gets the clause, because the server re-derives.
-- **Coins:** framing spends nothing; framing failure spends nothing; analysis failure still
-  refunds. The existing invariant tests must pass untouched — if this design requires changing
-  them, the design is wrong.
+- **Coins and the receipt:** framing spends one; framing failure refunds it; an analysis
+  presenting an unredeemed `FramingId` spends nothing and marks it redeemed; presenting it a
+  second time charges normally; presenting another device's id is refused. Analysis failure
+  still refunds. The existing invariant tests must pass untouched — if this design requires
+  changing them, the design is wrong.
+- **Edits do not void the receipt:** options rewritten wholesale between framing and analysis
+  still redeem free.
+- **The confidence ceiling** is 50 on a bare account, and rises only on the evidence named in
+  §3 — never on a client-supplied value.
+- **Options list:** framing returns two or three, never one and never four; the confirm screen
+  floors deletion at two; a round-trip through `OptionsJson` preserves order.
+- **Saved framings** persist locally, survive a teardown and rebuild of the database (the
+  existing history test's shape), and an unredeemed one is still redeemable afterwards.
 - **Description → `Context`** mapping, the 1500 cap, and the appended `ContextPrompt` answer.
 - **Onboarding:** unset flag routes to `OnboardingShell`; skip sets it; modal re-entry from
   Profile leaves it set.
@@ -335,7 +421,13 @@ guarantee.
 
 ## Out of scope
 
-- **Three or more options.** Deferred until the reframe is proven; see Governing decision.
+- **A fourth option, or a person-supplied one beyond three.** Three is a ceiling, not a
+  starting point; see Governing decision.
+- **A setting that lifts the confidence ceiling.** Rejected on the evidence, not deferred;
+  see §3. A tone setting — brevity, warmth, reasoning shown — remains possible and would
+  leave the ceiling alone.
+- **Server-side storage of framings.** They live on the device. Moving them would break the
+  "nothing you type is written down" invariant; see §2.
 - **The two-person sibling app** — connecting both people, translating each into the other's
   profile, a communication-style instrument. It is a different product: it breaks the
   "nothing you type is written down" invariant, needs durable identity where there is
@@ -352,14 +444,19 @@ guarantee.
 ## Sequencing
 
 1. Multi-language (1.1.0/2) ships first. This spec assumes its composer seam exists.
-2. Server: `/api/dilemma/frame`, the `Interpersonal` re-derivation, `{{DOMAIN}}` in
-   `PromptAssembler`, `LimitsNote` through the contracts. Fast tests throughout.
-3. Prompt templates at version 2 via `DEPLOY.md` SQL; `ContentSeed.cs` updated to match.
-4. Eval suite; promote the prompt version only once it passes.
-5. App: describe-then-confirm on the Ask tab, `LimitsNote` in `AnswerView`, the raised context
-   cap, the `DecisionRow` column.
-6. App: `OnboardingShell`, the four screens, motion, the Settings row, the skip strip.
-7. Closed-testing round before promoting to production.
+2. Domain and contracts move from `OptionA`/`OptionB` to a list, everywhere at once. Doing
+   this first means nothing below is written twice.
+3. Server: `/api/dilemma/frame` with the coin charge and the `FramingId` receipt, the
+   `Interpersonal` re-derivation, the earned ceiling, `{{DOMAIN}}` and
+   `{{CONFIDENCE_CEILING}}` in `PromptAssembler`, `LimitsNote` through the contracts. Fast
+   tests throughout.
+4. Prompt templates at version 2 via `DEPLOY.md` SQL; `ContentSeed.cs` updated to match.
+5. Eval suite, including the ceiling thresholds; promote the prompt version only once it
+   passes.
+6. App: describe-then-confirm on the Ask tab, the options list in `AnswerView`, `LimitsNote`,
+   the raised context cap, locally saved framings and the unredeemed-framing prompt.
+7. App: `OnboardingShell`, the four screens, motion, the Settings row, the skip strip.
+8. Closed-testing round before promoting to production.
 
 ## Sources
 
